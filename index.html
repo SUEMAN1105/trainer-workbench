@@ -1253,13 +1253,13 @@
   function loadData() {
     try {
       // 1. 先尝试当前版本的 key
-      const raw = localStorage.getItem(STORE_KEY);
+      const raw = storageGet(STORE_KEY);
       if (raw) {
         const d = JSON.parse(raw);
         return ensureCompleteData(d);
       }
       // 1.5 尝试从备份 key 恢复
-      const backupRaw = localStorage.getItem(STORE_KEY + '_backup');
+      const backupRaw = storageGet(STORE_KEY + '_backup');
       if (backupRaw) {
         try {
           const d = JSON.parse(backupRaw);
@@ -1271,7 +1271,7 @@
       }
       // 2. 尝试从所有旧版本 key 加载并迁移
       for (const oldKey of OLD_STORE_KEYS) {
-        const oldRaw = localStorage.getItem(oldKey);
+        const oldRaw = storageGet(oldKey);
         if (oldRaw) {
           try {
             const oldData = JSON.parse(oldRaw);
@@ -1279,15 +1279,15 @@
               const migrated = migrateData(oldData);
               const completed = ensureCompleteData(migrated);
               // 立即保存到新 key，下次就不用再迁移
-              localStorage.setItem(STORE_KEY, JSON.stringify(completed));
+              storageSet(STORE_KEY, JSON.stringify(completed));
               console.log('已从旧版本(' + oldKey + ')迁移数据');
               // 迁移成功后删除旧 key，释放空间
-              try { localStorage.removeItem(oldKey); } catch(_) {}
+              storageRemove(oldKey);
               return completed;
             }
           } catch (e) { console.warn('迁移失败(' + oldKey + '):', e); }
           // 即使迁移失败也删旧 key（可能是损坏数据）
-          try { localStorage.removeItem(oldKey); } catch(_) {}
+          storageRemove(oldKey);
         }
       }
     } catch (e) { console.warn('loadData error:', e); }
@@ -1296,35 +1296,74 @@
 
   let data = loadData();
 
-  function saveData() {
-    try {
-      const json = JSON.stringify(data);
-      localStorage.setItem(STORE_KEY, json);
+  /* ==============================
+     存储层：localStorage + 内存 fallback
+     QQ浏览器等可能限制 localStorage，需要容错
+     ============================== */
+  let _memStore = {}; // 内存存储 fallback
+  let _lsUsable = null; // null=未检测, true/false
 
-      // 尝试写备份，如果空间不够就跳过备份（主数据优先）
-      try {
-        localStorage.setItem(STORE_KEY + '_backup', json);
-      } catch(e2) {
-        // 备份写不下就算了，不影响主流程
-        console.warn('备份写入跳过（空间不足）:', e2.message);
-      }
+  function detectLS() {
+    if (_lsUsable !== null) return _lsUsable;
+    try {
+      const k = '__t_' + Date.now();
+      localStorage.setItem(k, 'x');
+      localStorage.removeItem(k);
+      _lsUsable = true;
+    } catch(e) {
+      _lsUsable = false;
+      console.warn('localStorage 不可用，改用内存存储:', e.name, e.message);
     }
-    catch (e) {
-      console.error('saveData error:', e);
-      // 诊断具体原因
-      let reason = e.name || 'UnknownError';
-      let detail = '';
-      if (e.name === 'QuotaExceededError' || e.code === 22) {
-        try {
-          const size = JSON.stringify(data).length;
-          detail = `\n\n数据大小: ${(size / 1024).toFixed(1)} KB\n这可能是因为浏览器 localStorage 配额已满（通常限制 5MB）。`;
-        } catch(_) {}
-        reason = '存储空间已满';
-      } else if (e.name === 'SecurityError') {
-        reason = '浏览器安全限制（可能是无痕模式）';
-        detail = '\n\n请退出无痕/隐私模式后重试。';
-      }
-      alert(`⚠️ 保存失败：${reason}${detail}\n\n请先点击「导出备份」保存数据文件，然后清理浏览器缓存或删除不用的记录后重试。`);
+    return _lsUsable;
+  }
+
+  function storageGet(key) {
+    if (detectLS()) {
+      try { return localStorage.getItem(key); } catch(e) { return null; }
+    }
+    return _memStore[key] || null;
+  }
+
+  function storageSet(key, val) {
+    if (detectLS()) {
+      try { localStorage.setItem(key, val); return true; }
+      catch(e) { console.warn('localStorage 写入失败，改用内存:', e.name); }
+    }
+    _memStore[key] = val;
+    return false; // 返回 false 表示用了内存存储（非持久化）
+  }
+
+  function storageRemove(key) {
+    if (detectLS()) {
+      try { localStorage.removeItem(key); } catch(e) {}
+    }
+    delete _memStore[key];
+  }
+
+  // 标记当前是否在用内存模式（非持久化）
+  let _usingMemory = false;
+
+  function saveData() {
+    const json = JSON.stringify(data);
+    const sizeKB = (json.length / 1024).toFixed(1);
+
+    // 用存储层写入（自动 fallback 到内存）
+    const ok = storageSet(STORE_KEY, json);
+
+    if (!ok) {
+      // localStorage 写不进去，已在内存中保存
+      _usingMemory = true;
+      // 静默处理，不每次都弹窗打扰用户
+      // 只在控制台记录
+      console.warn('数据已保存在内存中（非持久化），请导出备份');
+      return;
+    }
+
+    // localStorage 写入成功，尝试备份
+    try {
+      localStorage.setItem(STORE_KEY + '_backup', json);
+    } catch(e) {
+      // 备份失败就算了
     }
   }
 
@@ -2098,8 +2137,8 @@
   function clearAllData() {
     if (!confirm('⚠️ 确认清空所有数据？\n\n此操作不可撤销！\n建议先点击「导出备份」保存数据。')) return;
     if (!confirm('再次确认：真的要清空全部数据吗？')) return;
-    localStorage.removeItem(STORE_KEY);
-    localStorage.removeItem(STORE_KEY + '_backup');
+    storageRemove(STORE_KEY);
+    storageRemove(STORE_KEY + '_backup');
     location.reload();
   }
 
@@ -3424,9 +3463,7 @@
       ${renderFeedbackStats()}
 
       <div class="section-title">💾 数据备份与恢复</div>
-      <div style="background:#fff7ed; border:1px solid #fde68a; border-radius:10px; padding:12px; margin-bottom:10px; font-size:12px; color:#92400e;">
-        ⚠️ 重要：你的数据保存在浏览器本地（localStorage）。清除浏览器缓存、更新版本后数据可能丢失。请定期点击「导出备份」保存数据文件，更新后用「导入恢复」找回。
-      </div>
+      ${renderStorageStatus()}
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
         <button class="btn primary" onclick="exportRecords()">📤 导出备份</button>
         <button class="btn ghost" onclick="document.getElementById('fullJsonImport').click()">📥 导入恢复</button>
@@ -3434,6 +3471,51 @@
         <button class="btn danger" onclick="clearAllData()">🗑️ 清空所有数据</button>
       </div>
     `;
+  }
+
+  function renderStorageStatus() {
+    const lsOk = detectLS();
+    let dataSize = 0;
+    try { dataSize = JSON.stringify(data).length; } catch(_) {}
+    const sizeKB = (dataSize / 1024).toFixed(1);
+
+    if (lsOk) {
+      // localStorage 可用，检查实际剩余空间
+      let remaining = '未知';
+      try {
+        // 测试能写多大
+        let testStr = '';
+        let max = 0;
+        for (let i = 0; i < 5120; i++) testStr += 'x'; // 每次 5KB
+        for (let i = 0; i < 100; i++) {
+          try { localStorage.setItem('__size_test', testStr.repeat(i + 1)); max = (i + 1) * 5; }
+          catch(e) { break; }
+        }
+        localStorage.removeItem('__size_test');
+        remaining = max + ' KB';
+      } catch(_) {}
+
+      return `
+        <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px; margin-bottom:10px; font-size:12px; color:#166534;">
+          ✅ 存储状态正常（localStorage 可用）<br/>
+          📊 当前数据大小: ${sizeKB} KB · 可用空间约: ${remaining}<br/>
+          <span style="color:#16a34a;">数据会自动保存，建议定期导出备份以防丢失</span>
+        </div>
+      `;
+    } else {
+      return `
+        <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:12px; margin-bottom:10px; font-size:12px; color:#991b1b;">
+          ❌ 浏览器不允许本地存储！数据只保存在内存中，关闭页面后丢失！<br/>
+          📊 当前数据大小: ${sizeKB} KB<br/><br/>
+          <strong>解决方法（QQ浏览器）：</strong><br/>
+          1. 检查 QQ浏览器设置 → 隐私设置 → 是否开启了「无痕浏览」<br/>
+          2. QQ浏览器设置 → 清除浏览数据 → 清除缓存（不要清除 Cookie 和网站数据）<br/>
+          3. 尝试用系统自带的 Safari 或 Chrome 打开本页面<br/>
+          4. 如果是从微信/QQ内打开的链接，请在浏览器中单独打开<br/><br/>
+          <strong style="color:#dc2626;">⚠️ 当前模式下请务必先导出备份再操作！</strong>
+        </div>
+      `;
+    }
   }
 
   function renderFeedbackStats() {
@@ -3567,6 +3649,13 @@
     $('periodText').textContent = formatDateWithQuarter();
     // 每周激励语
     updateDailyQuote();
+    // 检测存储状态
+    if (!detectLS()) {
+      // localStorage 不可用，延迟提示（等页面渲染完）
+      setTimeout(() => {
+        alert('⚠️ 当前浏览器不允许使用本地存储！\n\n你的数据不会自动保存，关闭页面后丢失。\n\n请每次操作后点击「导出备份」保存数据。\n\n建议用 Safari 或 Chrome 打开本页面。');
+      }, 500);
+    }
     // 默认选中分析报告页
     switchPage('analysis', document.querySelector('[data-page=analysis]'));
   }
