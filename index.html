@@ -1245,6 +1245,8 @@
     if (!d.focusStores) d.focusStores = [];
     if (!d.focusByMonth) d.focusByMonth = {};
     if (!d.uploadedImages) d.uploadedImages = [];
+    // v7: 清空旧的图片数据，释放 localStorage 空间
+    d.uploadedImages = [];
     return d;
   }
 
@@ -1267,7 +1269,7 @@
           }
         } catch(e) {}
       }
-      // 2. 尝试从所有旧版本 key 加载
+      // 2. 尝试从所有旧版本 key 加载并迁移
       for (const oldKey of OLD_STORE_KEYS) {
         const oldRaw = localStorage.getItem(oldKey);
         if (oldRaw) {
@@ -1279,9 +1281,13 @@
               // 立即保存到新 key，下次就不用再迁移
               localStorage.setItem(STORE_KEY, JSON.stringify(completed));
               console.log('已从旧版本(' + oldKey + ')迁移数据');
+              // 迁移成功后删除旧 key，释放空间
+              try { localStorage.removeItem(oldKey); } catch(_) {}
               return completed;
             }
           } catch (e) { console.warn('迁移失败(' + oldKey + '):', e); }
+          // 即使迁移失败也删旧 key（可能是损坏数据）
+          try { localStorage.removeItem(oldKey); } catch(_) {}
         }
       }
     } catch (e) { console.warn('loadData error:', e); }
@@ -1294,10 +1300,32 @@
     try {
       const json = JSON.stringify(data);
       localStorage.setItem(STORE_KEY, json);
-      // 同时写一份备份，防止数据丢失
-      localStorage.setItem(STORE_KEY + '_backup', json);
+
+      // 尝试写备份，如果空间不够就跳过备份（主数据优先）
+      try {
+        localStorage.setItem(STORE_KEY + '_backup', json);
+      } catch(e2) {
+        // 备份写不下就算了，不影响主流程
+        console.warn('备份写入跳过（空间不足）:', e2.message);
+      }
     }
-    catch (e) { alert('⚠️ 保存失败，建议先导出 JSON 备份'); }
+    catch (e) {
+      console.error('saveData error:', e);
+      // 诊断具体原因
+      let reason = e.name || 'UnknownError';
+      let detail = '';
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        try {
+          const size = JSON.stringify(data).length;
+          detail = `\n\n数据大小: ${(size / 1024).toFixed(1)} KB\n这可能是因为浏览器 localStorage 配额已满（通常限制 5MB）。`;
+        } catch(_) {}
+        reason = '存储空间已满';
+      } else if (e.name === 'SecurityError') {
+        reason = '浏览器安全限制（可能是无痕模式）';
+        detail = '\n\n请退出无痕/隐私模式后重试。';
+      }
+      alert(`⚠️ 保存失败：${reason}${detail}\n\n请先点击「导出备份」保存数据文件，然后清理浏览器缓存或删除不用的记录后重试。`);
+    }
   }
 
   function uid() { return Math.random().toString(36).slice(2, 10); }
