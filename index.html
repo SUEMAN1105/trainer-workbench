@@ -12,7 +12,6 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%232d6cdf'/%3E%3Ctext x='60' y='78' font-size='60' text-anchor='middle' fill='white'%3E📚%3C/text%3E%3C/svg%3E" />
 <link rel="manifest" href="manifest.json" />
 <title>闪闪✨培训师工作台</title>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   :root {
     --bg: #f5f7fb;
@@ -240,24 +239,6 @@
   .upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
   .upload-zone .hint { font-size: 12px; margin-top: 6px; color: var(--text-muted); }
   .upload-zone input[type=file] { display: none; }
-
-  .ocr-progress { margin-top: 12px; padding: 12px; background: var(--primary-soft); border-radius: 8px; display: none; }
-  .ocr-progress.show { display: block; }
-  .ocr-progress .bar-wrap { height: 6px; background: #fff; border-radius: 3px; overflow: hidden; margin-top: 8px; }
-  .ocr-progress .bar-fill { height: 100%; background: var(--primary); transition: width 0.3s; }
-  .ocr-progress .text { font-size: 12px; color: var(--primary); }
-
-  .image-preview { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; }
-  .image-preview .item {
-    position: relative; border: 1px solid var(--border);
-    border-radius: 8px; overflow: hidden; background: #fff;
-  }
-  .image-preview .item img { max-width: 200px; max-height: 200px; display: block; }
-  .image-preview .item .badge-ocr {
-    position: absolute; bottom: 0; left: 0; right: 0;
-    background: rgba(0,0,0,0.6); color: #fff; font-size: 10px;
-    padding: 4px; text-align: center;
-  }
 
   /* 识别结果 */
   .recognized-block {
@@ -663,7 +644,7 @@
 
     <div class="group-title">快捷操作</div>
     <div class="nav-item" onclick="switchToInput()">
-      <span class="ico">＋</span><span>录入业绩</span>
+      <span class="ico">＋</span><span>录入数据</span>
     </div>
     <div class="nav-item" onclick="openModal('categoryModal')">
       <span class="ico">🌿</span><span>添加品类节点</span>
@@ -731,21 +712,17 @@
       </div>
     </div>
 
-    <!-- ============ 员工（图片识别录入） ============ -->
+    <!-- ============ 录入数据（手动录入） ============ -->
     <div id="page-input" style="display:none;">
       <div class="card">
         <div class="card-title">
-          <div class="left"><span class="bar"></span>上传店长发来的员工业绩图（整店）</div>
+          <div class="left"><span class="bar"></span>录入员工业绩数据</div>
         </div>
         <p style="font-size:13px; color:var(--text-sub); margin:0 0 12px;">
-          📌 上传一张包含<strong>全店所有员工</strong>的业绩图，OCR 会自动识别出每位员工的 <strong>姓名 / 客单价 / 连带率 / 独家品占比</strong>，识别结果可在下方表格中逐个修改。
-        </p>
-        <p style="font-size:12px; color:var(--text-muted); margin:0 0 12px;">
-          ⚙️ Tesseract.js 浏览器端 OCR · 首次加载约 10-20 秒 · 图片不会上传服务器
+          📌 手动录入每位员工的 <strong>姓名 / 客单价 / 连带率 / 独家品占比</strong>，保存后数据自动同步到员工业绩库、培训前后对比等模块。
         </p>
 
         <div class="form-row" style="margin-bottom: 12px;">
-          <div class="form-group"><label>月份</label><select id="f_month"></select></div>
           <div class="form-group"><label>日期</label><input type="date" id="f_date" /></div>
           <div class="form-group"><label>店铺</label><input type="text" id="f_store" list="storeList" placeholder="输入或选择店铺" autocomplete="off" /><datalist id="storeList"></datalist></div>
         </div>
@@ -753,33 +730,18 @@
           <label>店长备注（可选）</label>
           <input type="text" id="f_note" placeholder="如：本月护肤比赛重点" />
         </div>
-
-        <label class="upload-zone" id="uploadZone" for="imgUpload">
-          <div class="icon">🖼️</div>
-          <div>点击上传或拖拽业绩图到此处</div>
-          <div class="hint">支持 JPG / PNG · 一张图包含全店员工</div>
-          <input type="file" id="imgUpload" accept="image/*" onchange="handleImages(event)" />
-        </label>
-
-        <div class="ocr-progress" id="ocrProgress">
-          <div class="text" id="ocrText">🔍 准备识别...</div>
-          <div class="bar-wrap"><div class="bar-fill" id="ocrBar" style="width:0%"></div></div>
-        </div>
-
-        <div class="image-preview" id="imagePreview"></div>
       </div>
 
-      <!-- 批量识别结果 -->
-      <div class="card" id="recognizeCard" style="display:none;">
+      <!-- 手动录入表格 -->
+      <div class="card" id="recognizeCard">
         <div class="card-title">
-          <div class="left"><span class="bar"></span>识别结果（共 <span id="empCount">0</span> 人，可逐个修改）</div>
+          <div class="left"><span class="bar"></span>员工数据（共 <span id="empCount">0</span> 人）</div>
           <div class="actions">
-            <button class="btn ghost small" onclick="reRecognize()">🔄 重新识别</button>
             <button class="btn ghost small" onclick="addEmptyRow()">＋ 添加一行</button>
           </div>
         </div>
         <p style="font-size:12px; color:var(--text-muted); margin:0 0 10px;">
-          💡 如果某行识别错了，直接点单元格修改即可。漏识别的员工点"＋ 添加一行"手动补。
+          💡 点击「＋ 添加一行」逐个录入员工数据，填完后点下方「保存提交」。
         </p>
 
         <div style="overflow-x:auto;">
@@ -799,25 +761,14 @@
         </div>
 
         <div style="display:flex; gap:8px; margin-top:14px;">
-          <button class="btn primary" onclick="submitBatchRecords()">💾 保存全部（<span id="saveCount">0</span> 条）</button>
+          <button class="btn primary" onclick="submitBatchRecords()">💾 保存提交（<span id="saveCount">0</span> 条）</button>
           <button class="btn ghost" onclick="clearBatch()">清空</button>
         </div>
       </div>
 
-      <!-- 识别原文调试（可折叠） -->
-      <div class="card" id="rawTextCard" style="display:none;">
-        <div class="card-title">
-          <div class="left"><span class="bar"></span>OCR 原始文本（调试用）</div>
-          <div class="actions">
-            <button class="btn ghost small" onclick="var e=document.getElementById('rawText');e.style.display=e.style.display=='none'?'block':'none';">👁️ 展开/收起</button>
-          </div>
-        </div>
-        <pre id="rawText" style="display:none; background:#f5f7fb; padding:12px; border-radius:8px; font-size:11px; white-space:pre-wrap; word-break:break-all; max-height:300px; overflow-y:auto;"></pre>
-      </div>
-
       <div class="card">
         <div class="card-title">
-          <div class="left"><span class="bar"></span>本月已录入记录</div>
+          <div class="left"><span class="bar"></span>已录入记录</div>
           <div class="actions">
             <button class="btn ghost small" onclick="exportRecords()">📤 导出</button>
             <button class="btn ghost small" onclick="document.getElementById('jsonImport').click()">📥 导入</button>
@@ -1124,8 +1075,8 @@
   /* ==============================
      数据结构 v6
      ============================== */
-  const STORE_KEY = 'trainer_workbench_v6';
-  const OLD_STORE_KEY = 'trainer_workbench_v5';
+  const STORE_KEY = 'trainer_workbench_v7';
+  const OLD_STORE_KEY = 'trainer_workbench_v6';
   let currentMetric = 'atv';  // 当前柱状图对比的指标
   let currentTrainingFilter = 'all';  // 培训记录筛选
   let currentCompareMode = 'emp';  // 对比模式
@@ -1210,16 +1161,19 @@
     };
   }
 
-  /* v5→v6 迁移函数 */
+  /* v6→v7 迁移函数（去除 OCR 图片识别，改为手动录入） */
   function migrateData(oldData) {
     const d = JSON.parse(JSON.stringify(oldData));
-    // records 补 date 和 catRatios
+    // records 补 date 和 catRatios，清理 imageData
     if (d.records) {
-      d.records = d.records.map(r => ({
-        ...r,
-        date: r.date || (r.month ? r.month + '-15' : ''),
-        catRatios: r.catRatios || {},
-      }));
+      d.records = d.records.map(r => {
+        const { imageData, ...rest } = r;
+        return {
+          ...rest,
+          date: rest.date || (rest.month ? rest.month + '-15' : ''),
+          catRatios: rest.catRatios || {},
+        };
+      });
     }
     // trainings 迁移
     if (d.trainings) {
@@ -1254,6 +1208,7 @@
     d.records.forEach(r => {
       if (!r.date) r.date = r.month ? r.month + '-15' : '';
       if (!r.catRatios) r.catRatios = {};
+      delete r.imageData; // v7: 清理旧的图片数据
     });
     if (!d.categories) d.categories = defaultData().categories;
     if (!d.trainings) d.trainings = [];
@@ -1292,7 +1247,7 @@
         const d = JSON.parse(raw);
         return ensureCompleteData(d);
       }
-      // 尝试从 v5 迁移
+      // 尝试从旧版本迁移
       const oldRaw = localStorage.getItem(OLD_STORE_KEY);
       if (oldRaw) {
         try {
@@ -1392,7 +1347,7 @@
   }
   function goHome() { switchPage('home', document.querySelector('[data-page=home]')); }
   function switchToInput() {
-    // 录入业绩快捷入口：清除所有 active，直接切到 input 页
+    // 录入数据快捷入口：清除所有 active，直接切到 input 页
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
     ['home','input','staff','category','focus','compare','training','analysis'].forEach(p => {
       const e2 = $('page-' + p);
@@ -1742,346 +1697,14 @@
   }
 
   /* ==============================
-     图片识别（保留原有 OCR 功能）
+     手动录入数据
      ============================== */
-  let currentImages = [];
-  let worker = null;
-
-  function readImage(file) {
-    return new Promise((resolve, reject) => {
-      const r = new FileReader();
-      r.onload = () => resolve(r.result); r.onerror = reject;
-      r.readAsDataURL(file);
-    });
-  }
-
-  async function getWorker() {
-    if (worker) return worker;
-    $('ocrProgress').classList.add('show');
-    $('ocrText').textContent = '⚙️ 初始化 OCR 引擎（首次约 10-20 秒）...';
-    $('ocrBar').style.width = '10%';
-    worker = await Tesseract.createWorker(['chi_sim', 'eng'], 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          $('ocrBar').style.width = Math.round(m.progress * 100) + '%';
-          $('ocrText').textContent = `🔍 识别中... ${Math.round(m.progress * 100)}%`;
-        } else if (m.status) {
-          $('ocrText').textContent = `⚙️ ${m.status}...`;
-        }
-      }
-    });
-    return worker;
-  }
-
-  async function handleImages(e) {
-    const files = Array.from(e.target.files);
-    if (!files.length) return;
-    currentImages = [];
-    $('imagePreview').innerHTML = '';
-    for (const f of files) {
-      const dataUrl = await readImage(f);
-      currentImages.push({ name: f.name, data: dataUrl });
-    }
-    $('imagePreview').innerHTML = currentImages.map(img => `
-      <div class="item"><img src="${img.data}" alt="${img.name}" /><div class="badge-ocr">${img.name}</div></div>
-    `).join('');
-    if (currentImages.length) await recognizeBatch(currentImages[0]);
-  }
-
-  async function recognizeBatch(img) {
-    if (!img) return;
-    $('recognizeCard').style.display = 'none';
-    $('rawTextCard').style.display = 'none';
-    $('ocrProgress').classList.add('show');
-    $('ocrBar').style.width = '0%';
-    $('ocrText').textContent = '🔍 准备识别...';
-    try {
-      const w = await getWorker();
-      $('ocrText').textContent = '🔍 正在识别整张图片（约需 5-15 秒）...';
-      const result = await w.recognize(img.data);
-      const text = result.data.text;
-      console.log('OCR 原文：', text);
-
-      $('rawText').textContent = text;
-      $('rawTextCard').style.display = 'block';
-
-      const employees = parseBatchOcr(text);
-      console.log('解析出的员工：', employees);
-
-      renderBatchTable(employees);
-
-      $('recognizeCard').style.display = 'block';
-      $('ocrText').textContent = `✅ 识别完成，共识别 ${employees.length} 人，请核对`;
-      $('ocrBar').style.width = '100%';
-      setTimeout(() => $('ocrProgress').classList.remove('show'), 3000);
-    } catch (err) {
-      console.error(err);
-      $('ocrText').textContent = '❌ 识别失败：' + err.message + '（可手动添加行）';
-      $('recognizeCard').style.display = 'block';
-      renderBatchTable([]);
-    }
-  }
-
-  function reRecognize() {
-    if (currentImages.length) recognizeBatch(currentImages[0]);
-    else alert('请先上传图片');
-  }
-
-  /**
-   * 批量解析 OCR 文本，按行提取员工数据
-   * 策略：不依赖固定关键词，智能提取每行的"中文姓名 + 后面的数字"
-   */
-  function parseBatchOcr(text) {
-    const employees = [];
-    if (!text) return employees;
-
-    // 按换行符分割，保留有效行
-    const lines = text.split(/\n/).map(l => l.trim()).filter(l => l.length >= 2);
-    console.log('OCR 共', lines.length, '行文本');
-
-    // 先尝试找表头行（含"姓名/员工"或"客单价/单价"等关键词的行）
-    let headerIdx = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (/姓名|员工名|店员|导购|BA名/i.test(lines[i]) || /宔?单价|客单价|ATV/i.test(lines[i])) {
-        headerIdx = i;
-        break;
-      }
-    }
-    const startIdx = headerIdx >= 0 ? headerIdx + 1 : 0;
-
-    // 从表头下一行开始解析
-    for (let i = startIdx; i < lines.length; i++) {
-      const emp = parseLine(lines[i]);
-      if (emp && emp.name && (emp.atv || emp.upt || emp.exclusive)) {
-        employees.push(emp);
-      }
-    }
-
-    // 如果没解析出来，尝试所有行
-    if (employees.length === 0) {
-      console.log('表头策略失败，尝试全量解析...');
-      for (const line of lines) {
-        const emp = parseLine(line);
-        if (emp && emp.name && (emp.atv || emp.upt || emp.exclusive)) {
-          employees.push(emp);
-        }
-      }
-    }
-
-    // 如果还是 0 人，尝试"多行合并"策略：有些 OCR 输出会把一个人的数据拆成多行
-    if (employees.length === 0) {
-      console.log('单行策略失败，尝试多行合并...');
-      const merged = parseMultiLine(lines);
-      employees.push(...merged);
-    }
-
-    // 去重：同名的只保留第一条
-    const seen = new Set();
-    return employees.filter(e => {
-      const key = e.name + '|' + (e.atv || '') + '|' + (e.upt || '');
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }
-
-  /**
-   * 解析单行，提取姓名 + 三个指标
-   * 兼容多种格式：
-   *   "曾婷婷 66666.6 0 0 0 0 0 0"  → 纯数字格式
-   *   "曾婷婷 客单价1280 连带率2.1 独家占比32%"  → 带关键词格式
-   *   "曾婷婷 1,280 2.10 32.0"  → 带千分位/小数
-   *   "1 曾婷婷 1280 2.1 32"  → 带序号
-   */
-  function parseLine(line) {
-    if (!line || line.length < 2) return null;
-
-    // 跳过表头和统计行
-    if (/^(姓名|员工|店员|导购|排名|合计|总计|平均|小计|序号|编号)/.test(line)) return null;
-    if (/^(宔?单价|客单价|连带率|连单率|独家|占比|销售额|笔数|件数|目标|达成)/.test(line)) return null;
-    // 跳过纯数字或纯符号行
-    if (!/[\u4e00-\u9fa5a-zA-Z]/.test(line)) return null;
-
-    let name = '';
-    let atv = '';
-    let upt = '';
-    let exclusive = '';
-
-    // ---- 策略1：带关键词的行 ----
-    // 客单价：支持"客单价""单价""宔单价""ATV"
-    const atvM = line.match(/(?:宔?单价|客单价|ATV)\s*[:：]?\s*(\d[\d,]*[.,]?\d*)/i);
-    // 连带率：支持"连带率""连帯率""连单率""UPT"
-    const uptM = line.match(/(?:连[帯带单]?\s*率|UPT)\s*[:：]?\s*(\d+[.,]?\d*)/i);
-    // 独家占比：支持"独家品占比""独家占比""独家品""自营占比""自营品占比"
-    const excM = line.match(/(?:独家品?\s*占比|独家\s*占比|独家品?|自营品?\s*占比|自营\s*占比)\s*[:：]?\s*(\d+[.,]?\d*)\s*%?/i);
-
-    if (atvM) atv = atvM[1].replace(/,/g, '');
-    if (uptM) upt = uptM[1].replace(/,/g, '');
-    if (excM) exclusive = excM[1].replace(/[,%]/g, '');
-
-    // 如果找到了带关键词的指标，姓名就是行首的中文
-    if (atvM || uptM || excM) {
-      const nameM = line.match(/([\u4e00-\u9fa5]{2,4})/);
-      if (nameM) name = nameM[1];
-    }
-
-    // ---- 策略2：纯数字行（无关键词）----
-    // 格式："姓名 数字 数字 数字" 或 "序号 姓名 数字 数字 数字"
-    if (!name || (!atv && !upt && !exclusive)) {
-      // 提取行中所有中文片段（可能是姓名）
-      const cnMatches = line.match(/[\u4e00-\u9fa5]{2,4}/g);
-      // 提取行中所有数字
-      const numMatches = line.match(/(\d[\d,]*[.,]?\d*)/g) || [];
-
-      if (cnMatches && numMatches.length >= 2) {
-        // 姓名取第一个中文片段（2-4 字），跳过"合计""总计"等
-        const skipWords = ['合计', '总计', '平均', '小计', '排名'];
-        const nameCandidate = cnMatches.find(c => !skipWords.includes(c) && c.length >= 2);
-        if (nameCandidate) name = nameCandidate;
-
-        // 清洗数字
-        const cleanNums = numMatches.map(n => n.replace(/,/g, '').replace(/%/g, ''));
-        console.log(`行 "${line.slice(0, 30)}..." → 姓名=${name}, 数字=`, cleanNums);
-
-        if (name && cleanNums.length >= 2) {
-          // 按数值特征智能分类
-          // 客单价：通常 >= 100 的较大数值
-          // 连带率：通常 0.5-5.0 的小数
-          // 独家占比/自营占比：通常 0-100 的整数或小数
-
-          // 过滤掉可能是"序号"的小整数（1-50 出现在姓名前面的）
-          const namePos = line.indexOf(name);
-          const numsAfterName = cleanNums.filter((n, i) => {
-            // 找到这个数字在原行的位置
-            const numStr = numMatches[i];
-            const numPos = line.indexOf(numStr);
-            return numPos > namePos;
-          });
-
-          const candidates = numsAfterName.length >= 2 ? numsAfterName : cleanNums;
-
-          // 客单价：第一个 >= 50 的数（有些小店客单价可能不到 100）
-          const atvCandidate = candidates.find(n => Number(n) >= 50);
-          if (atvCandidate && !atv) atv = atvCandidate;
-
-          // 连带率：0-10 之间且含小数点的
-          const uptCandidate = candidates.find(n => {
-            const v = Number(n);
-            return v > 0 && v <= 10 && n.includes('.') && n !== atv;
-          });
-          if (uptCandidate && !upt) upt = uptCandidate;
-
-          // 独家占比：剩余的 0-100 之间的数
-          const usedNums = [atv, upt].filter(Boolean);
-          const remaining = candidates.filter(n => !usedNums.includes(n));
-          const excCandidate = remaining.find(n => {
-            const v = Number(n);
-            return v >= 0 && v <= 100;
-          });
-          if (excCandidate && !exclusive) exclusive = excCandidate;
-        }
-      }
-    }
-
-    if (!name) return null;
-    if (!atv && !upt && !exclusive) return null;  // 没有有效数字的不算
-    return { name, atv, upt, exclusive };
-  }
-
-  /**
-   * 多行合并解析：有些 OCR 把一个人的数据拆成多行
-   * 例如：
-   *   曾婷婷
-   *   1280 2.1 32%
-   *   李明轩
-   *   1150 1.9 28%
-   */
-  function parseMultiLine(lines) {
-    const result = [];
-    let currentName = '';
-    let currentNums = [];
-
-    for (const line of lines) {
-      // 如果这行有中文姓名（2-4字）
-      const nameM = line.match(/^([\u4e00-\u9fa5]{2,4})\s*$/);
-      if (nameM) {
-        // 如果之前已经积累了姓名+数字，先保存
-        if (currentName && currentNums.length >= 2) {
-          const emp = classifyNums(currentName, currentNums);
-          if (emp) result.push(emp);
-        }
-        currentName = nameM[1];
-        currentNums = [];
-        continue;
-      }
-
-      // 如果这行有中文姓名 + 数字
-      const nameWithNums = line.match(/^([\u4e00-\u9fa5]{2,4})\s+(\d[\d,]*[.,]?\d*[\s%]*)+/);
-      if (nameWithNums) {
-        // 先保存之前的
-        if (currentName && currentNums.length >= 2) {
-          const emp = classifyNums(currentName, currentNums);
-          if (emp) result.push(emp);
-        }
-        currentName = nameWithNums[1];
-        const nums = line.match(/(\d[\d,]*[.,]?\d*)/g) || [];
-        currentNums = nums.map(n => n.replace(/,/g, '').replace(/%/g, ''));
-        continue;
-      }
-
-      // 如果这行只有数字，追加到当前姓名
-      const numsOnly = line.match(/^(\d[\d,]*[.,]?\d*[\s%]*)+$/);
-      if (numsOnly && currentName) {
-        const nums = line.match(/(\d[\d,]*[.,]?\d*)/g) || [];
-        currentNums.push(...nums.map(n => n.replace(/,/g, '').replace(/%/g, '')));
-      }
-    }
-
-    // 保存最后一个
-    if (currentName && currentNums.length >= 2) {
-      const emp = classifyNums(currentName, currentNums);
-      if (emp) result.push(emp);
-    }
-
-    return result;
-  }
-
-  /**
-   * 根据数字特征分类：客单价/连带率/独家占比
-   */
-  function classifyNums(name, nums) {
-    if (!name || nums.length < 2) return null;
-    let atv = '', upt = '', exclusive = '';
-
-    // 客单价：>= 50 的较大数
-    const atvN = nums.find(n => Number(n) >= 50);
-    if (atvN) atv = atvN;
-
-    // 连带率：0-10 之间含小数点
-    const uptN = nums.find(n => {
-      const v = Number(n);
-      return v > 0 && v <= 10 && n.includes('.') && n !== atv;
-    });
-    if (uptN) upt = uptN;
-
-    // 独家占比：剩余的 0-100 之间的数
-    const used = [atv, upt].filter(Boolean);
-    const remaining = nums.filter(n => !used.includes(n));
-    const excN = remaining.find(n => {
-      const v = Number(n);
-      return v >= 0 && v <= 100;
-    });
-    if (excN) exclusive = excN;
-
-    if (!atv && !upt && !exclusive) return null;
-    return { name, atv, upt, exclusive };
-  }
 
   /* 渲染批量编辑表格 */
   function renderBatchTable(employees) {
     const tbody = $('batchTbody');
     if (!employees.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">未识别到员工数据，请点"＋ 添加一行"手动录入</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">点击"＋ 添加一行"开始录入员工数据</td></tr>';
     } else {
       tbody.innerHTML = employees.map((emp, idx) => renderBatchRow(emp, idx)).join('');
     }
@@ -2107,6 +1730,9 @@
     const idx = tbody.children.length;
     tbody.insertAdjacentHTML('beforeend', renderBatchRow({}, idx));
     updateBatchCount();
+    // 自动聚焦新行的姓名输入框
+    const newNameInput = tbody.lastElementChild.querySelector('.batch-name');
+    if (newNameInput) newNameInput.focus();
   }
 
   function removeBatchRow(btn) {
@@ -2128,13 +1754,16 @@
     $('saveCount').textContent = count;
   }
 
-  /* 保存批量记录 */
+  /* 保存批量记录 — 保存后数据自动联动到各模块 */
   function submitBatchRecords() {
-    const month = $('f_month').value;
-    const store = $('f_store').value;
+    const store = $('f_store').value.trim();
     const note = $('f_note').value.trim();
-    const date = $('f_date').value || (month ? month + '-15' : '');
-    if (!month || !store) { alert('请先填写月份和店铺'); return; }
+    const dateStr = $('f_date').value;
+    if (!dateStr) { alert('请选择日期'); return; }
+    if (!store) { alert('请填写店铺'); return; }
+
+    // 从日期推导月份（YYYY-MM）
+    const month = dateStr.slice(0, 7);
 
     const rows = $('batchTbody').querySelectorAll('tr');
     const records = [];
@@ -2143,13 +1772,13 @@
       const name = r.querySelector('.batch-name').value.trim();
       if (!name) continue;
       records.push({
-        id: uid(), month, date, store, name,
+        id: uid(),
+        month, date: dateStr, store, name,
         atv: r.querySelector('.batch-atv').value,
         upt: r.querySelector('.batch-upt').value,
         exclusive: r.querySelector('.batch-exc').value,
         catRatios: {},
         note: note,
-        imageData: currentImages[0] ? currentImages[0].data : null,
         createdAt: new Date().toISOString(),
       });
     }
@@ -2158,52 +1787,58 @@
 
     data.records = data.records.concat(records);
 
-    // 自动更新 staffProfile
+    // 自动创建/更新员工档案
     records.forEach(r => {
       getOrCreateStaffProfile(r.name, r.store);
     });
 
+    // 如果店铺不在列表中，自动添加
+    if (!data.stores.find(s => s.name === store)) {
+      data.stores.push({ id: uid(), name: store, manager: '', note: '' });
+    }
+
     saveData();
-    renderRecentRecords();
+
+    // 清空录入表格，保留日期和店铺方便连续录入
     clearBatch();
-    alert(`✅ 已保存 ${records.length} 条记录（${store} · ${month}）`);
+    addEmptyRow();
+
+    // 刷新已录入记录列表
+    renderRecentRecords();
+
+    alert(`✅ 已保存 ${records.length} 条记录（${store} · ${dateStr}）\n数据已同步到员工业绩库、培训前后对比等模块`);
   }
 
   function clearBatch() {
     $('batchTbody').innerHTML = '';
-    $('recognizeCard').style.display = 'none';
-    $('rawTextCard').style.display = 'none';
     updateBatchCount();
   }
 
-  /* 录入页 */
+  /* 录入页初始化 */
   function renderInput() {
-    fillMonthSelect($('f_month'), true);
     refreshStoreSelects();
-    // 默认日期
+    // 默认日期为今天
     if (!$('f_date').value) {
       const today = new Date().toISOString().slice(0, 10);
       $('f_date').value = today;
+    }
+    // 如果表格为空，自动添加一行
+    if (!$('batchTbody').children.length) {
+      renderBatchTable([]);
+      addEmptyRow();
     }
     renderRecentRecords();
   }
 
   function clearForm() {
-    ['f_note'].forEach(id => { if ($(id)) $(id).value = ''; });
-    currentImages = [];
-    $('imagePreview').innerHTML = '';
-    $('recognizeCard').style.display = 'none';
-    $('rawTextCard').style.display = 'none';
-    $('ocrProgress').classList.remove('show');
-    $('imgUpload').value = '';
+    if ($('f_note')) $('f_note').value = '';
     clearBatch();
+    addEmptyRow();
   }
 
   function renderRecentRecords() {
-    if (!$('f_month')) return;
-    const month = $('f_month').value;
-    if (!month) return;
-    const recs = data.records.filter(r => r.month === month).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+    // 显示最近所有记录（按日期倒序，最多50条）
+    const recs = data.records.slice().sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||'')).slice(0, 50);
     $('recentRecords').innerHTML = recs.length ? `
       <table class="data">
         <thead><tr><th>员工</th><th>店铺</th><th>客单价</th><th>连带率</th><th>独家占比</th><th>日期</th><th></th></tr></thead>
@@ -2215,18 +1850,11 @@
             <td>${r.upt || '-'}</td>
             <td>${r.exclusive ? r.exclusive + '%' : '-'}</td>
             <td style="font-size:11px; color:var(--text-muted);">${r.date || (r.createdAt||'').slice(0,10)}</td>
-            <td>${r.imageData ? `<button class="btn ghost small" onclick="viewImage('${r.id}')">🖼️</button>` : ''}<button class="btn danger small" onclick="delRecord('${r.id}')">✕</button></td>
+            <td><button class="btn danger small" onclick="delRecord('${r.id}')">✕</button></td>
           </tr>
         `).join('')}</tbody>
       </table>
-    ` : '<div class="empty"><div class="icon">📭</div>本月还没有记录</div>';
-  }
-
-  function viewImage(id) {
-    const r = data.records.find(x => x.id === id);
-    if (!r || !r.imageData) return;
-    const w = window.open('', '_blank');
-    w.document.write(`<title>${r.name} - ${r.month}</title><body style="margin:0; background:#222; display:flex; justify-content:center; align-items:center; min-height:100vh;"><img src="${r.imageData}" style="max-width:100%; max-height:100vh;" /></body>`);
+    ` : '<div class="empty"><div class="icon">📭</div>还没有记录，开始录入吧</div>';
   }
 
   function delRecord(id) {
@@ -3658,22 +3286,6 @@
     updateDailyQuote();
     // 默认选中分析报告页
     switchPage('analysis', document.querySelector('[data-page=analysis]'));
-    const uz = $('uploadZone');
-    if (uz) {
-      uz.addEventListener('dragover', e => { e.preventDefault(); uz.classList.add('dragover'); });
-      uz.addEventListener('dragleave', () => uz.classList.remove('dragover'));
-      uz.addEventListener('drop', e => {
-        e.preventDefault();
-        uz.classList.remove('dragover');
-        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-        if (files.length) {
-          const dt = new DataTransfer();
-          files.forEach(f => dt.items.add(f));
-          $('imgUpload').files = dt.files;
-          handleImages({ target: { files } });
-        }
-      });
-    }
   }
   init();
 </script>
