@@ -1,0 +1,3682 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="闪闪培训师" />
+<meta name="theme-color" content="#2d6cdf" />
+<meta name="description" content="闪闪✨培训师工作台 - 培训前后对比、业绩追踪、一键生成培训反馈" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%232d6cdf'/%3E%3Ctext x='60' y='78' font-size='60' text-anchor='middle' fill='white'%3E📚%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%232d6cdf'/%3E%3Ctext x='60' y='78' font-size='60' text-anchor='middle' fill='white'%3E📚%3C/text%3E%3C/svg%3E" />
+<link rel="manifest" href="manifest.json" />
+<title>闪闪✨培训师工作台</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f7fb;
+    --card: #ffffff;
+    --primary: #2d6cdf;
+    --primary-soft: #e8f0fe;
+    --primary-dark: #1f4fa8;
+    --text: #1f2330;
+    --text-sub: #6b7280;
+    --text-muted: #9aa0aa;
+    --border: #eef0f5;
+    --green: #22c55e;
+    --green-deep: #16a34a;
+    --red: #ef4444;
+    --red-deep: #dc2626;
+    --orange: #f59e0b;
+    --pink: #ffe2e2;
+    --pink-text: #c8304a;
+    --yellow-soft: #fef3c7;
+    --yellow-text: #b45309;
+    --shadow: 0 4px 16px rgba(31, 79, 168, 0.06);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+  }
+
+  /* 顶部 */
+  .topbar {
+    background: #fff;
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .topbar .home-icon { font-size: 22px; cursor: pointer; }
+  .topbar .icons { display: flex; gap: 14px; align-items: center; color: var(--text-sub); font-size: 18px; }
+  .topbar .title { font-weight: 600; font-size: 16px; }
+
+  /* 头部蓝色横幅 */
+  .hero {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    padding: 18px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .hero .avatar {
+    width: 52px; height: 52px; border-radius: 10px;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; flex-shrink: 0;
+  }
+  .hero .info { flex: 1; min-width: 0; }
+  .hero .info .name { font-size: 17px; font-weight: 600; }
+  .hero .info .meta { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+  .hero .role-tag {
+    background: rgba(255,255,255,0.18);
+    padding: 6px 10px; border-radius: 8px;
+    font-size: 12px; line-height: 1.4; text-align: center;
+    flex-shrink: 0;
+  }
+  .hero .role-tag .small { opacity: 0.8; font-size: 11px; }
+
+  /* 布局：抽屉 + 内容 */
+  .layout { display: flex; }
+  .drawer {
+    width: 220px;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 12px 0 24px;
+    flex-shrink: 0;
+  }
+  .content { flex: 1; padding: 16px; min-width: 0; }
+
+  /* 抽屉 */
+  .group-title { font-size: 12px; color: var(--text-muted); margin: 14px 18px 8px; font-weight: 500; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 18px; cursor: pointer;
+    font-size: 14px; color: var(--text);
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: #fafbff; }
+  .nav-item.active {
+    background: var(--primary-soft);
+    color: var(--primary);
+    font-weight: 600;
+    border-left-color: var(--primary);
+  }
+  .nav-item .ico { font-size: 18px; width: 22px; text-align: center; }
+
+  /* 卡片 */
+  .card {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .card-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px;
+  }
+  .card-title .left { display: flex; align-items: center; gap: 8px; }
+  .card-title .bar {
+    display: inline-block; width: 4px; height: 14px; border-radius: 2px; background: var(--primary);
+  }
+  .card-title .actions { display: flex; gap: 8px; }
+
+  /* 按钮 */
+  .btn {
+    border: none; padding: 6px 14px; border-radius: 8px;
+    font-size: 13px; cursor: pointer;
+    font-family: inherit;
+  }
+  .btn.primary { background: var(--primary); color: #fff; }
+  .btn.ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+  .btn.small { padding: 4px 10px; font-size: 12px; }
+  .btn.danger { background: #fee2e2; color: var(--red); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* 柱状图：进步/退步榜 */
+  .bar-chart {
+    display: flex; align-items: flex-end; gap: 14px;
+    height: 200px; padding: 30px 8px 0;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .bar-chart .zero-line {
+    position: absolute; left: 0; right: 0; top: 50%; height: 1px;
+    background: var(--text-muted); opacity: 0.3;
+  }
+  .bar-chart .y-tick {
+    position: absolute; left: -30px; font-size: 10px; color: var(--text-muted);
+    transform: translateY(-50%);
+  }
+  .bar-chart .bar {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-end; position: relative; height: 100%;
+  }
+  .bar-chart .bar .fill {
+    width: 70%; border-radius: 4px 4px 0 0;
+    transition: height 0.3s;
+    position: relative;
+  }
+  .bar-chart .bar .fill.pos { background: var(--green); }
+  .bar-chart .bar .fill.neg { background: var(--red); }
+  .bar-chart .bar .value-label {
+    position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; font-weight: 600; color: var(--text);
+    white-space: nowrap;
+  }
+  .bar-chart .bar .fill.pos .value-label { color: var(--green-deep); }
+  .bar-chart .bar .fill.neg .value-label { color: var(--red-deep); }
+  .bar-chart .bar .label {
+    font-size: 10px; color: var(--text-sub); margin-top: 6px;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-height: 50px; line-height: 1.2;
+  }
+
+  /* 红色"需关注"标签 */
+  .warn-tags { margin-top: 14px; }
+  .warn-tags .title { font-size: 13px; color: var(--text-sub); margin-bottom: 8px; }
+  .warn-tags .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .warn-tag {
+    background: var(--pink); color: var(--pink-text);
+    padding: 6px 12px; border-radius: 16px;
+    font-size: 12px; font-weight: 600;
+  }
+
+  /* 指标卡片 */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .kpi {
+    background: #fafbff; border-radius: 10px; padding: 14px; text-align: center;
+  }
+  .kpi .label { font-size: 11px; color: var(--text-sub); }
+  .kpi .value { font-size: 22px; font-weight: 700; margin-top: 4px; color: var(--primary); }
+  .kpi .delta { font-size: 11px; margin-top: 2px; }
+  .kpi .up { color: var(--green); }
+  .kpi .down { color: var(--red); }
+
+  /* 排行 */
+  .rank-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px dashed var(--border);
+  }
+  .rank-row:last-child { border-bottom: 0; }
+  .rank-row .idx {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600;
+  }
+  .rank-row .avatar-letter {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #f0f2f7; color: var(--text-sub);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600;
+  }
+  .rank-row .name { flex: 1; font-size: 14px; }
+  .rank-row .name .store { font-size: 11px; color: var(--text-muted); display: block; margin-top: 2px; }
+  .rank-row .stat {
+    text-align: right;
+  }
+  .rank-row .stat .v { font-weight: 700; color: var(--primary); }
+  .rank-row .stat .l { font-size: 10px; color: var(--text-muted); }
+
+  /* 上传 */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 28px 16px; text-align: center; color: var(--text-sub);
+    background: #fafbff; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--primary); background: var(--primary-soft); }
+  .upload-zone .icon { font-size: 36px; margin-bottom: 8px; }
+  .upload-zone .hint { font-size: 12px; margin-top: 6px; color: var(--text-muted); }
+  .upload-zone input[type=file] { display: none; }
+
+  .ocr-progress { margin-top: 12px; padding: 12px; background: var(--primary-soft); border-radius: 8px; display: none; }
+  .ocr-progress.show { display: block; }
+  .ocr-progress .bar-wrap { height: 6px; background: #fff; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .ocr-progress .bar-fill { height: 100%; background: var(--primary); transition: width 0.3s; }
+  .ocr-progress .text { font-size: 12px; color: var(--primary); }
+
+  .image-preview { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .image-preview .item {
+    position: relative; border: 1px solid var(--border);
+    border-radius: 8px; overflow: hidden; background: #fff;
+  }
+  .image-preview .item img { max-width: 200px; max-height: 200px; display: block; }
+  .image-preview .item .badge-ocr {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.6); color: #fff; font-size: 10px;
+    padding: 4px; text-align: center;
+  }
+
+  /* 识别结果 */
+  .recognized-block {
+    background: #fff7ed; border: 1px solid #fde68a; border-radius: 10px;
+    padding: 14px; margin-top: 12px;
+  }
+  .recognized-block h4 { margin: 0 0 10px; font-size: 13px; color: #92400e; }
+  .field-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .field-3 .field { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+  .field-3 .field label { font-size: 11px; color: var(--text-sub); display: block; margin-bottom: 4px; }
+  .field-3 .field input {
+    width: 100%; border: none; font-size: 18px; font-weight: 700;
+    color: var(--primary); background: transparent; padding: 0; outline: none;
+  }
+  .field-3 .field .unit { font-size: 11px; color: var(--text-muted); }
+
+  /* 表单 */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 12px; color: var(--text-sub); }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; background: #fff; font-family: inherit;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--primary); }
+  .form-group .full { grid-column: 1/-1; }
+  textarea { resize: vertical; min-height: 60px; }
+
+  /* 待办 */
+  .todo-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0; border-bottom: 1px dashed var(--border);
+  }
+  .todo-row:last-child { border-bottom: 0; }
+  .todo-row .ico {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: var(--primary-soft); color: var(--primary);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+    flex-shrink: 0;
+  }
+  .todo-row .body { flex: 1; min-width: 0; }
+  .todo-row .body .t { font-size: 14px; font-weight: 500; }
+  .todo-row .body .s { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .badge {
+    font-size: 11px; padding: 3px 10px; border-radius: 10px;
+    font-weight: 500; flex-shrink: 0;
+  }
+  .badge.doing { background: #e0f2fe; color: #0284c7; }
+  .badge.wait { background: #fef3c7; color: #b45309; }
+  .badge.done { background: #dcfce7; color: #15803d; }
+  .badge.planned { background: #fef3c7; color: #b45309; }
+
+  /* 课表 */
+  table.schedule { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.schedule th, table.schedule td {
+    padding: 8px 6px; text-align: left; border-bottom: 1px solid var(--border);
+  }
+  table.schedule th { color: var(--text-sub); font-weight: 500; }
+
+  /* 表格 */
+  table.data { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; font-size: 13px; }
+  table.data th { background: #f5f7fb; color: var(--text-sub); padding: 10px 8px; font-weight: 500; text-align: left; }
+  table.data td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+  table.data tr:last-child td { border-bottom: 0; }
+  .store-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; background: var(--primary-soft); color: var(--primary); }
+
+  /* 移动端 */
+  .toggle-btn {
+    position: fixed; bottom: 20px; right: 20px;
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--primary); color: #fff; border: none;
+    box-shadow: 0 4px 16px rgba(45, 108, 223, 0.4);
+    font-size: 22px; cursor: pointer; z-index: 20;
+    display: none;
+  }
+  .mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 25; }
+  .mask.show { display: block; }
+  @media (max-width: 768px) {
+    .layout { display: block; }
+    .drawer {
+      position: fixed; left: -100%; top: 0; width: 80%; max-width: 280px;
+      height: 100vh; z-index: 30; transition: left 0.3s;
+    }
+    .drawer.open { left: 0; }
+    .toggle-btn { display: flex; align-items: center; justify-content: center; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .field-3 { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr 1fr; }
+    .staff-layout { grid-template-columns: 1fr !important; }
+    .train-columns { grid-template-columns: 1fr !important; }
+    .feedback-info-grid { grid-template-columns: 1fr !important; }
+  }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 13px; }
+  .empty .icon { font-size: 48px; margin-bottom: 10px; }
+
+  .section-title {
+    font-size: 13px; color: var(--text-sub); margin: 16px 0 8px; font-weight: 600;
+  }
+
+  /* 月份切换 */
+  .month-switcher {
+    background: #fff; padding: 10px 16px; border-radius: 10px;
+    margin-bottom: 14px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .month-switcher .lbl { font-size: 13px; color: var(--text-sub); }
+  .month-switcher select { padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; background: #fff; }
+  .month-switcher .focus-cat {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 12px;
+    background: #fff7ed; color: #c2410c; font-size: 12px;
+  }
+  .metric-tabs { display: flex; gap: 6px; margin-left: auto; }
+  .metric-tab {
+    padding: 4px 10px; font-size: 12px; border-radius: 6px;
+    background: #f0f2f7; color: var(--text-sub); cursor: pointer;
+  }
+  .metric-tab.active { background: var(--primary); color: #fff; }
+
+  /* 模态框 */
+  .modal-mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    z-index: 100; display: none; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .modal-mask.show { display: flex; }
+  .modal {
+    background: #fff; border-radius: 12px; width: 100%; max-width: 540px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-head {
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; font-weight: 600;
+  }
+  .modal-head .close { cursor: pointer; color: var(--text-sub); font-size: 20px; }
+  .modal-body { padding: 16px; }
+  .modal-foot { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+  .tree-node { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: #fff; }
+  .tree-head {
+    padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;
+  }
+  .tree-head .name { font-weight: 600; }
+  .tree-children { padding: 0 14px 10px 36px; }
+  .tree-child {
+    padding: 6px 10px; display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px dashed var(--border); font-size: 13px;
+  }
+  .check {
+    width: 18px; height: 18px; border: 2px solid var(--border);
+    border-radius: 4px; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; flex-shrink: 0;
+    color: #fff;
+  }
+  .check.on { background: var(--primary); border-color: var(--primary); }
+
+  /* ========== 第3步：首页新增样式 ========== */
+
+  /* 培训安排双栏 */
+  .train-columns {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .train-column h4 {
+    font-size: 13px; margin: 0 0 8px; color: var(--text-sub);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .train-item {
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 12px; margin-bottom: 8px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .train-item:hover { background: var(--primary-soft); }
+  .train-item .ti-date { font-weight: 600; font-size: 13px; }
+  .train-item .ti-store { font-size: 12px; color: var(--primary); margin-top: 2px; }
+  .train-item .ti-content { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+  .train-item .ti-meta { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* 重点门店预警卡片 */
+  .alert-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px;
+  }
+  .alert-card {
+    border-radius: 10px; padding: 14px; cursor: pointer; transition: transform 0.15s;
+    border-left: 4px solid;
+  }
+  .alert-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+  .alert-card.red { background: var(--pink); border-color: var(--red); }
+  .alert-card.yellow { background: var(--yellow-soft); border-color: var(--orange); }
+  .alert-card .ac-store { font-weight: 700; font-size: 14px; }
+  .alert-card .ac-label { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 8px; display: inline-block; margin-top: 4px; }
+  .alert-card.red .ac-label { background: var(--red); color: #fff; }
+  .alert-card.yellow .ac-label { background: var(--orange); color: #fff; }
+  .alert-card .ac-metrics { display: flex; gap: 10px; margin-top: 8px; font-size: 12px; }
+  .alert-card .ac-metrics span { color: var(--text-sub); }
+  .alert-card .ac-metrics strong { color: var(--text); }
+  .alert-card .ac-hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+  /* 进步/退步榜——门店横向滑动 */
+  .store-scroll-container {
+    display: flex; gap: 14px; overflow-x: auto; padding-bottom: 8px;
+    scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  }
+  .store-progress-card {
+    flex: 0 0 360px; scroll-snap-align: start;
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px;
+    background: #fff;
+  }
+  .store-progress-card .spc-title { font-weight: 700; font-size: 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .store-progress-card .spc-names { font-size: 12px; color: var(--text-sub); margin-top: 8px; }
+
+  /* ========== 第4步：培训反馈生成器样式 ========== */
+  .feedback-generator-card { border: 2px solid var(--primary); }
+  .feedback-step { margin-bottom: 16px; }
+  .feedback-step h4 {
+    font-size: 14px; margin: 0 0 10px; color: var(--primary);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .feedback-info-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  }
+  .feedback-info-item {
+    background: #fafbff; border-radius: 8px; padding: 10px;
+  }
+  .feedback-info-item label { font-size: 11px; color: var(--text-sub); display: block; margin-bottom: 4px; }
+  .feedback-info-item .val { font-size: 14px; font-weight: 600; color: var(--text); }
+
+  .feedback-edit-list { }
+  .feedback-edit-list .fe-item {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 6px;
+  }
+  .feedback-edit-list .fe-item input {
+    flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px;
+  }
+  .feedback-edit-list .fe-item .fe-del {
+    width: 28px; height: 28px; border-radius: 6px; border: none;
+    background: #fee2e2; color: var(--red); cursor: pointer; font-size: 14px;
+    flex-shrink: 0;
+  }
+  .feedback-edit-list .fe-add {
+    padding: 6px 12px; border: 1px dashed var(--primary); border-radius: 6px;
+    background: transparent; color: var(--primary); cursor: pointer; font-size: 12px;
+  }
+
+  /* 数据对比表格 */
+  .data-compare-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  .data-compare-table th { background: #f5f7fb; padding: 8px; text-align: left; color: var(--text-sub); font-weight: 500; }
+  .data-compare-table td { padding: 8px; border-bottom: 1px solid var(--border); }
+  .data-compare-table .up { color: var(--green-deep); font-weight: 600; }
+  .data-compare-table .down { color: var(--red-deep); font-weight: 600; }
+
+  /* 反馈报告卡片 */
+  .feedback-report-card {
+    border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-top: 14px;
+    background: #fff;
+  }
+  .feedback-report-card .frc-title {
+    font-size: 18px; font-weight: 700; text-align: center; margin-bottom: 16px;
+    color: var(--primary);
+  }
+  .feedback-report-card .frc-section { margin-bottom: 16px; }
+  .feedback-report-card .frc-section h5 {
+    font-size: 14px; margin: 0 0 8px; padding-bottom: 4px;
+    border-bottom: 2px solid var(--primary-soft); color: var(--primary-dark);
+  }
+  .feedback-report-card .frc-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .feedback-report-card .frc-info div { background: #fafbff; padding: 8px; border-radius: 6px; font-size: 12px; }
+  .feedback-report-card .frc-info div label { color: var(--text-sub); display: block; font-size: 11px; }
+  .feedback-report-card .frc-info div span { font-weight: 600; }
+  .feedback-report-card .frc-list { padding-left: 20px; margin: 4px 0; }
+  .feedback-report-card .frc-list li { font-size: 13px; margin-bottom: 4px; }
+  .feedback-report-card .frc-progress { background: #dcfce7; border-radius: 8px; padding: 10px 14px; margin: 6px 0; }
+  .feedback-report-card .frc-gap { background: var(--pink); border-radius: 8px; padding: 10px 14px; margin: 6px 0; }
+
+  /* ========== 第5步：员工业绩库样式 ========== */
+  .staff-layout {
+    display: grid; grid-template-columns: 280px 1fr; gap: 14px;
+  }
+  .staff-list-panel {
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    max-height: 70vh; overflow-y: auto;
+  }
+  .staff-list-item {
+    padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer;
+    transition: background 0.15s;
+  }
+  .staff-list-item:hover { background: #fafbff; }
+  .staff-list-item.active { background: var(--primary-soft); border-left: 3px solid var(--primary); }
+  .staff-list-item .sli-name { font-weight: 600; font-size: 14px; }
+  .staff-list-item .sli-meta { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  .staff-detail-panel { }
+  .staff-info-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .staff-info-item { background: #fafbff; border-radius: 8px; padding: 10px; }
+  .staff-info-item label { font-size: 11px; color: var(--text-sub); display: block; }
+  .staff-info-item span { font-size: 14px; font-weight: 600; }
+
+  /* 时间线 */
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-item {
+    position: relative; padding: 8px 0 8px 16px; margin-bottom: 4px;
+  }
+  .timeline-item::before {
+    content: ''; position: absolute; left: -20px; top: 14px;
+    width: 10px; height: 10px; border-radius: 50%; border: 2px solid #fff;
+  }
+  .timeline-item.progress::before { background: var(--green); }
+  .timeline-item.problem::before { background: var(--red); }
+  .timeline-item.training::before { background: var(--primary); }
+  .timeline-item .ti-text { font-size: 13px; }
+  .timeline-item .ti-date { font-size: 11px; color: var(--text-muted); }
+
+  /* ========== 第6步：培训前后对比 BA 树状图 ========== */
+  .ba-tree-chart {
+    display: flex; align-items: center; justify-content: center; gap: 20px; padding: 16px 0;
+  }
+  .ba-tree-column {
+    flex: 1; max-width: 300px; border-radius: 10px; padding: 14px;
+  }
+  .ba-tree-column.before { background: #fff7ed; border: 1px solid #fde68a; }
+  .ba-tree-column.after { background: #dcfce7; border: 1px solid #86efac; }
+  .ba-tree-column h5 { text-align: center; margin: 0 0 10px; font-size: 14px; }
+  .ba-tree-column .ba-row {
+    display: flex; justify-content: space-between; padding: 6px 0;
+    border-bottom: 1px dashed var(--border); font-size: 13px;
+  }
+  .ba-tree-arrow {
+    font-size: 32px; color: var(--primary); flex-shrink: 0;
+  }
+
+  /* 门店对比选择 */
+  .compare-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .compare-tab {
+    padding: 6px 14px; font-size: 13px; border-radius: 8px; cursor: pointer;
+    background: #f0f2f7; color: var(--text-sub);
+  }
+  .compare-tab.active { background: var(--primary); color: #fff; }
+
+  /* Tab 筛选 */
+  .filter-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .filter-tab {
+    padding: 6px 14px; font-size: 13px; border-radius: 8px; cursor: pointer;
+    background: #f0f2f7; color: var(--text-sub);
+  }
+  .filter-tab.active { background: var(--primary); color: #fff; }
+
+  /* 重点门店列表 */
+  .focus-store-card {
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .focus-store-card .fsc-info { flex: 1; }
+  .focus-store-card .fsc-name { font-weight: 600; }
+  .focus-store-card .fsc-reason { font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="home-icon" onclick="goHome()">⌂</span>
+  <span class="title">闪闪✨培训师工作台</span>
+  <div class="icons"><span>•••</span><span>⊙</span></div>
+</div>
+
+<div class="hero">
+  <div class="avatar">📚</div>
+  <div class="info">
+    <div class="name">闪闪✨培训师工作台</div>
+    <div class="meta" id="periodText">2026年7月29日 · 第3季度</div>
+  </div>
+  <div class="role-tag" id="dailyQuote">
+    <div>做难事必有所得</div>
+    <div class="small">Do hard things, get hard results.</div>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="drawer" id="drawer">
+    <div class="group-title">主要模块</div>
+    <div class="nav-item" data-page="home" onclick="switchPage('home', this)">
+      <span class="ico">🏠</span><span>工作台首页</span>
+    </div>
+    <div class="nav-item" data-page="staff" onclick="switchPage('staff', this)">
+      <span class="ico">🧑‍💼</span><span>员工业绩库</span>
+    </div>
+    <div class="nav-item" data-page="category" onclick="switchPage('category', this)">
+      <span class="ico">🌿</span><span>品类树管理</span>
+    </div>
+    <div class="nav-item" data-page="focus" onclick="switchPage('focus', this)">
+      <span class="ico">🎯</span><span>当月重点</span>
+    </div>
+    <div class="nav-item" data-page="compare" onclick="switchPage('compare', this)">
+      <span class="ico">🔄</span><span>培训前后对比</span>
+    </div>
+    <div class="nav-item" data-page="training" onclick="switchPage('training', this)">
+      <span class="ico">📚</span><span>培训记录</span>
+    </div>
+    <div class="nav-item active" data-page="analysis" onclick="switchPage('analysis', this)">
+      <span class="ico">📊</span><span>分析报告</span>
+    </div>
+
+    <div class="group-title">快捷操作</div>
+    <div class="nav-item" onclick="switchToInput()">
+      <span class="ico">＋</span><span>录入业绩</span>
+    </div>
+    <div class="nav-item" onclick="openModal('categoryModal')">
+      <span class="ico">🌿</span><span>添加品类节点</span>
+    </div>
+    <div class="nav-item" onclick="openModal('trainingModal')">
+      <span class="ico">📝</span><span>添加培训记录</span>
+    </div>
+  </aside>
+
+  <main class="content" id="content">
+
+    <!-- ============ 首页 ============ -->
+    <div id="page-home" style="display:none;">
+      <div class="month-switcher">
+        <span class="lbl">📅 月份：</span>
+        <select id="currentMonth" onchange="renderHome()"></select>
+        <span id="focusTag" class="focus-cat" style="display:none;">🎯 本月重点</span>
+        <div class="metric-tabs">
+          <div class="metric-tab active" data-metric="atv" onclick="switchMetric('atv', this)">客单价</div>
+          <div class="metric-tab" data-metric="upt" onclick="switchMetric('upt', this)">连带率</div>
+          <div class="metric-tab" data-metric="exclusive" onclick="switchMetric('exclusive', this)">独家占比</div>
+        </div>
+      </div>
+
+      <!-- 培训安排卡片 -->
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>培训安排</div>
+        </div>
+        <div class="train-columns" id="trainColumns"></div>
+      </div>
+
+      <!-- 业绩数据大盘 -->
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>业绩数据大盘</div>
+          <div class="actions">
+            <span style="font-size:11px; color:var(--text-muted);">仅展示大类指标</span>
+          </div>
+        </div>
+        <div id="storeOverview" style="overflow-x:auto;"></div>
+      </div>
+
+      <!-- 重点门店提醒 -->
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>重点门店提醒</div>
+          <div class="actions">
+            <button class="btn ghost small" onclick="openModal('watchStoreModal')">＋ 手动添加</button>
+            <button class="btn ghost small" onclick="openModal('thresholdModal')">⚙️ 阈值设置</button>
+          </div>
+        </div>
+        <div id="storeAlerts"></div>
+      </div>
+
+      <!-- 进步/退步榜（按门店横向滑动） -->
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>进步 / 退步榜 <span id="progressMetricLabel" style="font-size:12px; color:var(--text-muted); font-weight:normal;">(按客单价)</span></div>
+          <div class="actions">
+            <span style="font-size:11px; color:var(--text-muted);">📈 较上月 · 左右滑动查看各门店</span>
+          </div>
+        </div>
+        <div class="store-scroll-container" id="storeProgressScroll"></div>
+      </div>
+    </div>
+
+    <!-- ============ 员工（图片识别录入） ============ -->
+    <div id="page-input" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>上传店长发来的员工业绩图（整店）</div>
+        </div>
+        <p style="font-size:13px; color:var(--text-sub); margin:0 0 12px;">
+          📌 上传一张包含<strong>全店所有员工</strong>的业绩图，OCR 会自动识别出每位员工的 <strong>姓名 / 客单价 / 连带率 / 独家品占比</strong>，识别结果可在下方表格中逐个修改。
+        </p>
+        <p style="font-size:12px; color:var(--text-muted); margin:0 0 12px;">
+          ⚙️ Tesseract.js 浏览器端 OCR · 首次加载约 10-20 秒 · 图片不会上传服务器
+        </p>
+
+        <div class="form-row" style="margin-bottom: 12px;">
+          <div class="form-group"><label>月份</label><select id="f_month"></select></div>
+          <div class="form-group"><label>日期</label><input type="date" id="f_date" /></div>
+          <div class="form-group"><label>店铺</label><input type="text" id="f_store" list="storeList" placeholder="输入或选择店铺" autocomplete="off" /><datalist id="storeList"></datalist></div>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>店长备注（可选）</label>
+          <input type="text" id="f_note" placeholder="如：本月护肤比赛重点" />
+        </div>
+
+        <label class="upload-zone" id="uploadZone" for="imgUpload">
+          <div class="icon">🖼️</div>
+          <div>点击上传或拖拽业绩图到此处</div>
+          <div class="hint">支持 JPG / PNG · 一张图包含全店员工</div>
+          <input type="file" id="imgUpload" accept="image/*" onchange="handleImages(event)" />
+        </label>
+
+        <div class="ocr-progress" id="ocrProgress">
+          <div class="text" id="ocrText">🔍 准备识别...</div>
+          <div class="bar-wrap"><div class="bar-fill" id="ocrBar" style="width:0%"></div></div>
+        </div>
+
+        <div class="image-preview" id="imagePreview"></div>
+      </div>
+
+      <!-- 批量识别结果 -->
+      <div class="card" id="recognizeCard" style="display:none;">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>识别结果（共 <span id="empCount">0</span> 人，可逐个修改）</div>
+          <div class="actions">
+            <button class="btn ghost small" onclick="reRecognize()">🔄 重新识别</button>
+            <button class="btn ghost small" onclick="addEmptyRow()">＋ 添加一行</button>
+          </div>
+        </div>
+        <p style="font-size:12px; color:var(--text-muted); margin:0 0 10px;">
+          💡 如果某行识别错了，直接点单元格修改即可。漏识别的员工点"＋ 添加一行"手动补。
+        </p>
+
+        <div style="overflow-x:auto;">
+          <table class="data" id="batchTable">
+            <thead>
+              <tr>
+                <th style="width:30px;">#</th>
+                <th>员工姓名</th>
+                <th>客单价</th>
+                <th>连带率</th>
+                <th>独家占比(%)</th>
+                <th style="width:50px;">操作</th>
+              </tr>
+            </thead>
+            <tbody id="batchTbody"></tbody>
+          </table>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button class="btn primary" onclick="submitBatchRecords()">💾 保存全部（<span id="saveCount">0</span> 条）</button>
+          <button class="btn ghost" onclick="clearBatch()">清空</button>
+        </div>
+      </div>
+
+      <!-- 识别原文调试（可折叠） -->
+      <div class="card" id="rawTextCard" style="display:none;">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>OCR 原始文本（调试用）</div>
+          <div class="actions">
+            <button class="btn ghost small" onclick="var e=document.getElementById('rawText');e.style.display=e.style.display=='none'?'block':'none';">👁️ 展开/收起</button>
+          </div>
+        </div>
+        <pre id="rawText" style="display:none; background:#f5f7fb; padding:12px; border-radius:8px; font-size:11px; white-space:pre-wrap; word-break:break-all; max-height:300px; overflow-y:auto;"></pre>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>本月已录入记录</div>
+          <div class="actions">
+            <button class="btn ghost small" onclick="exportRecords()">📤 导出</button>
+            <button class="btn ghost small" onclick="document.getElementById('jsonImport').click()">📥 导入</button>
+            <input type="file" id="jsonImport" accept=".json" style="display:none" onchange="importRecords(event)" />
+          </div>
+        </div>
+        <div id="recentRecords"></div>
+      </div>
+    </div>
+
+    <!-- ============ 员工业绩库 ============ -->
+    <div id="page-staff" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>员工业绩库</div>
+          <div class="actions">
+            <select id="filterStore" onchange="renderStaff()" style="padding:6px 10px; border:1px solid var(--border); border-radius:6px;">
+              <option value="">全部门店</option>
+            </select>
+          </div>
+        </div>
+        <div class="staff-layout" id="staffLayout">
+          <div class="staff-list-panel" id="staffListPanel"></div>
+          <div class="staff-detail-panel" id="staffDetailPanel"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 品类树 ============ -->
+    <div id="page-category" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>品类树管理</div>
+          <div class="actions">
+            <button class="btn primary small" onclick="openModal('categoryModal')">＋ 添加根品类</button>
+          </div>
+        </div>
+        <p style="font-size:13px; color:var(--text-sub); margin:0 0 12px;">
+          🌿 搭建品类层级。当月重点、培训对比都会绑定到这些品类。
+        </p>
+        <div id="categoryTree" class="category-tree"></div>
+      </div>
+    </div>
+
+    <!-- ============ 当月重点 ============ -->
+    <div id="page-focus" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>当月重点品类</div>
+        </div>
+        <p style="font-size:13px; color:var(--text-sub); margin:0 0 12px;">
+          🎯 选择本月培训重点品类，业绩库会自动高亮对应字段。
+        </p>
+        <div class="form-row">
+          <div class="form-group">
+            <label>月份</label>
+            <select id="focusMonth" onchange="renderFocus()"></select>
+          </div>
+        </div>
+        <div id="focusSelector"></div>
+        <button class="btn primary" onclick="saveFocus()" style="margin-top:12px;">💾 保存</button>
+      </div>
+
+      <!-- 重点跟进门店 -->
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>重点跟进门店</div>
+          <div class="actions">
+            <button class="btn primary small" onclick="openModal('focusStoreModal')">＋ 添加重点门店</button>
+          </div>
+        </div>
+        <div id="focusStoreList"></div>
+      </div>
+
+      <!-- 重点品类达成（从首页移来） -->
+      <div class="card">
+        <div class="card-title"><div class="left"><span class="bar"></span>重点品类达成</div></div>
+        <div id="focusProgressDetail"></div>
+      </div>
+    </div>
+
+    <!-- ============ 培训前后对比 ============ -->
+    <div id="page-compare" style="display:none;">
+      <div class="card">
+        <div class="card-title"><div class="left"><span class="bar"></span>培训前后对比</div></div>
+        <div class="compare-tabs">
+          <div class="compare-tab active" onclick="switchCompareMode('emp', this)">员工对比</div>
+          <div class="compare-tab" onclick="switchCompareMode('store', this)">门店对比</div>
+        </div>
+        <div id="compareEmpMode">
+          <div class="form-row">
+            <div class="form-group"><label>选择员工</label><select id="cmp_emp" onchange="renderCompare()"></select></div>
+            <div class="form-group"><label>选择培训</label><select id="cmp_training" onchange="renderCompare()"></select></div>
+          </div>
+          <div id="compareResult" style="margin-top:12px;"></div>
+        </div>
+        <div id="compareStoreMode" style="display:none;">
+          <div class="form-row">
+            <div class="form-group"><label>选择门店</label><select id="cmp_store" onchange="renderStoreCompare()"></select></div>
+            <div class="form-group"><label>选择培训</label><select id="cmp_store_training" onchange="renderStoreCompare()"></select></div>
+          </div>
+          <div id="storeCompareResult" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><div class="left"><span class="bar"></span>批量对比</div></div>
+        <div id="batchCompare"></div>
+      </div>
+    </div>
+
+    <!-- ============ 培训记录 ============ -->
+    <div id="page-training" style="display:none;">
+      <div class="card">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>培训记录</div>
+          <div class="actions">
+            <button class="btn primary small" onclick="openModal('trainingModal')">＋ 记录培训</button>
+          </div>
+        </div>
+        <div class="filter-tabs" id="trainingFilterTabs">
+          <div class="filter-tab active" onclick="filterTrainings('all', this)">全部</div>
+          <div class="filter-tab" onclick="filterTrainings('completed', this)">已完成</div>
+          <div class="filter-tab" onclick="filterTrainings('planned', this)">待开展</div>
+        </div>
+        <div id="trainingList"></div>
+      </div>
+
+      <!-- 培训反馈生成器 -->
+      <div class="card feedback-generator-card" id="feedbackGeneratorCard" style="display:none;">
+        <div class="card-title">
+          <div class="left"><span class="bar"></span>📝 培训反馈生成器</div>
+          <div class="actions">
+            <button class="btn ghost small" onclick="closeFeedbackGenerator()">收起</button>
+          </div>
+        </div>
+        <div id="feedbackGeneratorBody"></div>
+      </div>
+    </div>
+
+    <!-- ============ 分析报告 ============ -->
+    <div id="page-analysis" style="display:none;">
+      <div class="card">
+        <div class="card-title"><div class="left"><span class="bar"></span>分析报告</div></div>
+        <div id="analysisContent"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="mask" id="mask" onclick="toggleDrawer()"></div>
+<button class="toggle-btn" onclick="toggleDrawer()">☰</button>
+
+<!-- 模态框：添加品类 -->
+<div class="modal-mask" id="categoryModal">
+  <div class="modal">
+    <div class="modal-head"><span>🌿 添加品类</span><span class="close" onclick="closeModal('categoryModal')">✕</span></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>类型</label>
+          <select id="cat_type">
+            <option value="root">根品类（如：护肤大类）</option>
+            <option value="child">子品类（如：韩品护肤）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>归属上级（仅子品类）</label>
+          <select id="cat_parent"><option value="">-- 根品类 --</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>名称</label>
+          <input type="text" id="cat_name" placeholder="如：韩品护肤 / 洁面" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>备注（可选）</label>
+        <input type="text" id="cat_note" placeholder="如：本月比赛主推" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal('categoryModal')">取消</button>
+      <button class="btn primary" onclick="addCategory()">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框：添加培训（扩展） -->
+<div class="modal-mask" id="trainingModal">
+  <div class="modal">
+    <div class="modal-head"><span>📚 添加培训记录</span><span class="close" onclick="closeModal('trainingModal')">✕</span></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>培训日期</label><input type="date" id="t_date" /></div>
+        <div class="form-group"><label>培训时间</label><input type="time" id="t_time" /></div>
+        <div class="form-group"><label>店铺</label><select id="t_store"></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>带教时长（小时）</label><input type="number" id="t_duration" step="0.5" placeholder="如：2" /></div>
+        <div class="form-group"><label>带教人数</label><input type="number" id="t_empCount" placeholder="如：3" /></div>
+        <div class="form-group"><label>状态</label><select id="t_status"><option value="completed">已完成</option><option value="planned">待开展</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label>培训主题（绑定品类）</label>
+          <select id="t_cat"></select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 10px;">
+        <label>培训课题</label>
+        <input type="text" id="t_topic" placeholder="如：韩品护肤连带搭配技巧" />
+      </div>
+      <div class="form-group">
+        <label>带教内容详述</label>
+        <textarea id="t_content" placeholder="如：1. 韩品护肤产品知识讲解 2. 连带搭配话术演练 3. 顾客异议处理..." style="min-height: 80px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>参与员工（逗号分隔）</label>
+        <input type="text" id="t_emps" placeholder="如：李昌润,曾婷婷" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal('trainingModal')">取消</button>
+      <button class="btn primary" onclick="addTraining()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框：预警阈值设置 -->
+<div class="modal-mask" id="thresholdModal">
+  <div class="modal">
+    <div class="modal-head"><span>⚙️ 预警阈值设置</span><span class="close" onclick="closeModal('thresholdModal')">✕</span></div>
+    <div class="modal-body">
+      <p style="font-size:12px; color:var(--text-muted); margin:0 0 14px;">低于红色阈值为严重不达标，低于黄色阈值为需关注。</p>
+      <div class="form-row">
+        <div class="form-group"><label>客单价 - 黄色预警</label><input type="number" id="th_atv_yellow" /></div>
+        <div class="form-group"><label>客单价 - 红色预警</label><input type="number" id="th_atv_red" /></div>
+        <div class="form-group"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>连带率 - 黄色预警</label><input type="number" step="0.1" id="th_upt_yellow" /></div>
+        <div class="form-group"><label>连带率 - 红色预警</label><input type="number" step="0.1" id="th_upt_red" /></div>
+        <div class="form-group"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>自营占比(%) - 黄色预警</label><input type="number" id="th_exc_yellow" /></div>
+        <div class="form-group"><label>自营占比(%) - 红色预警</label><input type="number" id="th_exc_red" /></div>
+        <div class="form-group"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal('thresholdModal')">取消</button>
+      <button class="btn primary" onclick="saveThresholds()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框：手动添加重点门店 -->
+<div class="modal-mask" id="watchStoreModal">
+  <div class="modal">
+    <div class="modal-head"><span>＋ 手动添加重点门店</span><span class="close" onclick="closeModal('watchStoreModal')">✕</span></div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>选择门店</label>
+        <select id="watch_store"></select>
+      </div>
+      <div class="form-group">
+        <label>添加原因</label>
+        <textarea id="watch_reason" placeholder="如：连续两个月客单价下滑，需重点关注"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal('watchStoreModal')">取消</button>
+      <button class="btn primary" onclick="addWatchStore()">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 模态框：添加重点跟进门店 -->
+<div class="modal-mask" id="focusStoreModal">
+  <div class="modal">
+    <div class="modal-head"><span>＋ 添加重点跟进门店</span><span class="close" onclick="closeModal('focusStoreModal')">✕</span></div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label>选择门店</label>
+        <select id="focus_store_select"></select>
+      </div>
+      <div class="form-group">
+        <label>跟进重点</label>
+        <textarea id="focus_reason" placeholder="如：韩品护肤销售薄弱，需加强连带搭配培训"></textarea>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" onclick="closeModal('focusStoreModal')">取消</button>
+      <button class="btn primary" onclick="addFocusStore()">添加</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ==============================
+     数据结构 v6
+     ============================== */
+  const STORE_KEY = 'trainer_workbench_v6';
+  const OLD_STORE_KEY = 'trainer_workbench_v5';
+  let currentMetric = 'atv';  // 当前柱状图对比的指标
+  let currentTrainingFilter = 'all';  // 培训记录筛选
+  let currentCompareMode = 'emp';  // 对比模式
+  let selectedStaffKey = null;  // 当前选中的员工
+  let currentFeedbackTrainingId = null;  // 当前反馈生成器的培训ID
+
+  function defaultData() {
+    return {
+      records: [
+        // ===== 6月数据（作为对比基准） =====
+        { id: 'r061', month: '2026-06', date: '2026-06-15', store: '上海旗舰店', name: '陈雨桐', atv: '1280', upt: '2.1', exclusive: '32', catRatios: { c8: '15', c3: '10' }, note: '店长反馈护肤较弱', createdAt: '2026-07-01T10:00:00.000Z' },
+        { id: 'r062', month: '2026-06', date: '2026-06-15', store: '北京朝阳店', name: '李明轩', atv: '1150', upt: '1.9', exclusive: '28', catRatios: {}, note: '', createdAt: '2026-07-01T10:00:00.000Z' },
+        { id: 'r063', month: '2026-06', date: '2026-06-15', store: '广州天河店', name: '刘子涵', atv: '1320', upt: '2.3', exclusive: '35', catRatios: { c8: '18' }, note: '', createdAt: '2026-07-01T10:00:00.000Z' },
+        { id: 'r064', month: '2026-06', date: '2026-06-15', store: '深圳福田店', name: '谭子轩', atv: '1080', upt: '1.8', exclusive: '25', catRatios: {}, note: '韩品销售待提升', createdAt: '2026-07-01T10:00:00.000Z' },
+        { id: 'r065', month: '2026-06', date: '2026-06-15', store: '杭州西湖店', name: '孙浩然', atv: '1200', upt: '2.0', exclusive: '30', catRatios: {}, note: '', createdAt: '2026-07-01T10:00:00.000Z' },
+        { id: 'r066', month: '2026-06', date: '2026-06-15', store: '成都春熙店', name: '赵嘉怡', atv: '1400', upt: '2.5', exclusive: '40', catRatios: {}, note: '上月冠军', createdAt: '2026-07-01T10:00:00.000Z' },
+        { id: 'r067', month: '2026-06', date: '2026-06-15', store: '武汉光谷店', name: '吴俊杰', atv: '1250', upt: '2.2', exclusive: '33', catRatios: {}, note: '', createdAt: '2026-07-01T10:00:00.000Z' },
+        { id: 'r068', month: '2026-06', date: '2026-06-15', store: '南京新街口店', name: '林晓雨', atv: '1180', upt: '2.0', exclusive: '29', catRatios: {}, note: '', createdAt: '2026-07-01T10:00:00.000Z' },
+
+        // ===== 7月数据（本月，对比6月计算进步/退步） =====
+        { id: 'r071', month: '2026-07', date: '2026-07-15', store: '上海旗舰店', name: '陈雨桐', atv: '1450', upt: '2.6', exclusive: '42', catRatios: { c8: '22', c3: '12' }, note: '护肤培训后明显进步', createdAt: '2026-07-28T10:00:00.000Z' },
+        { id: 'r072', month: '2026-07', date: '2026-07-15', store: '北京朝阳店', name: '李明轩', atv: '1320', upt: '2.3', exclusive: '36', catRatios: {}, note: '', createdAt: '2026-07-28T10:00:00.000Z' },
+        { id: 'r073', month: '2026-07', date: '2026-07-15', store: '广州天河店', name: '刘子涵', atv: '1480', upt: '2.7', exclusive: '44', catRatios: { c8: '25' }, note: '韩品护肤冠军', createdAt: '2026-07-28T10:00:00.000Z' },
+        { id: 'r074', month: '2026-07', date: '2026-07-15', store: '深圳福田店', name: '谭子轩', atv: '1150', upt: '2.0', exclusive: '28', catRatios: {}, note: '韩品培训后回升', createdAt: '2026-07-28T10:00:00.000Z' },
+        { id: 'r075', month: '2026-07', date: '2026-07-15', store: '杭州西湖店', name: '孙浩然', atv: '1180', upt: '1.9', exclusive: '27', catRatios: {}, note: '状态下滑需关注', createdAt: '2026-07-28T10:00:00.000Z' },
+        { id: 'r076', month: '2026-07', date: '2026-07-15', store: '成都春熙店', name: '赵嘉怡', atv: '1220', upt: '2.1', exclusive: '31', catRatios: {}, note: '客单价明显下滑', createdAt: '2026-07-28T10:00:00.000Z' },
+        { id: 'r077', month: '2026-07', date: '2026-07-15', store: '武汉光谷店', name: '吴俊杰', atv: '1100', upt: '1.8', exclusive: '26', catRatios: {}, note: '连带率退步明显', createdAt: '2026-07-28T10:00:00.000Z' },
+        { id: 'r078', month: '2026-07', date: '2026-07-15', store: '南京新街口店', name: '林晓雨', atv: '1050', upt: '1.7', exclusive: '24', catRatios: {}, note: '三项指标均下滑', createdAt: '2026-07-28T10:00:00.000Z' },
+      ],
+      categories: [
+        { id: 'c1', name: '自营品', parent: null, note: '' },
+        { id: 'c2', name: '护肤大类', parent: null, note: '' },
+        { id: 'c3', name: '洁面', parent: 'c2', note: '' },
+        { id: 'c4', name: '精华', parent: 'c2', note: '' },
+        { id: 'c5', name: '面霜', parent: 'c2', note: '' },
+        { id: 'c6', name: '防晒', parent: 'c2', note: '' },
+        { id: 'c7', name: '面膜', parent: 'c2', note: '' },
+        { id: 'c8', name: '韩品护肤', parent: 'c2', note: '隶属护肤大类' },
+        { id: 'c9', name: '彩妆', parent: null, note: '' },
+      ],
+      trainings: [
+        { id: 't1', date: '2026-07-10', time: '14:00', duration: 2, empCount: 1, topic: '韩品护肤销售话术培训', content: '1. 韩品护肤产品知识讲解\n2. 销售话术演练\n3. 顾客异议处理', store: '上海旗舰店', emps: ['陈雨桐'], catId: 'c8', note: '韩品护肤销售话术培训', observations: ['韩品护肤产品知识不熟练', '连带搭配意识薄弱'], causes: ['新品培训不足', '缺乏连带搭配实操练习'], suggestions: ['每周安排一次韩品护肤知识抽查', '制作连带搭配推荐卡片'], beforeData: { month: '2026-06', perEmp: [{ name: '陈雨桐', atv: '1280', upt: '2.1', exclusive: '32', catRatios: { c8: '15' } }] }, afterData: { month: '2026-07', perEmp: [{ name: '陈雨桐', atv: '1450', upt: '2.6', exclusive: '42', catRatios: { c8: '22' } }] }, feedback: null, status: 'completed' },
+        { id: 't2', date: '2026-07-15', time: '10:00', duration: 3, empCount: 1, topic: '韩品护肤连带搭配培训', content: '1. 连带搭配基本原则\n2. 韩品护肤+面膜组合推荐\n3. 角色扮演演练', store: '广州天河店', emps: ['刘子涵'], catId: 'c8', note: '韩品护肤连带搭配培训', observations: ['连带率偏低', '韩品护肤关联销售意识不足'], causes: ['对产品搭配关系不熟悉'], suggestions: ['建立韩品护肤连带搭配推荐清单'], beforeData: { month: '2026-06', perEmp: [{ name: '刘子涵', atv: '1320', upt: '2.3', exclusive: '35', catRatios: { c8: '18' } }] }, afterData: { month: '2026-07', perEmp: [{ name: '刘子涵', atv: '1480', upt: '2.7', exclusive: '44', catRatios: { c8: '25' } }] }, feedback: null, status: 'completed' },
+        { id: 't3', date: '2026-07-18', time: '15:00', duration: 2, empCount: 1, topic: '护肤大类基础知识培训', content: '1. 护肤品类基础知识\n2. 不同肤质产品推荐\n3. 顾客需求挖掘', store: '深圳福田店', emps: ['谭子轩'], catId: 'c2', note: '护肤大类基础知识培训', observations: ['护肤基础知识薄弱', '肤质判断不准确'], causes: ['入职时间短，培训覆盖不足'], suggestions: ['安排护肤基础知识考核', '配发肤质判断手册'], beforeData: { month: '2026-06', perEmp: [{ name: '谭子轩', atv: '1080', upt: '1.8', exclusive: '25', catRatios: {} }] }, afterData: { month: '2026-07', perEmp: [{ name: '谭子轩', atv: '1150', upt: '2.0', exclusive: '28', catRatios: {} }] }, feedback: null, status: 'completed' },
+      ],
+      stores: [
+        { id: 's1', name: '上海旗舰店', manager: '张店长', note: '核心旗舰店' },
+        { id: 's2', name: '北京朝阳店', manager: '王店长', note: '' },
+        { id: 's3', name: '广州天河店', manager: '李店长', note: '' },
+        { id: 's4', name: '深圳福田店', manager: '陈店长', note: '' },
+        { id: 's5', name: '杭州西湖店', manager: '周店长', note: '' },
+        { id: 's6', name: '成都春熙店', manager: '赵店长', note: '' },
+        { id: 's7', name: '武汉光谷店', manager: '吴店长', note: '' },
+        { id: 's8', name: '南京新街口店', manager: '林店长', note: '' },
+      ],
+      staffProfiles: [
+        { id: 'sp1', name: '陈雨桐', store: '上海旗舰店', joinDate: '2025-03-01', phone: '138****8888', position: '资深导购', performanceHistory: [], trainingHistory: ['t1'], notes: [{ date: '2026-07-28', type: 'progress', text: '韩品护肤培训后客单价从1280提升至1450' }] },
+        { id: 'sp2', name: '刘子涵', store: '广州天河店', joinDate: '2024-08-15', phone: '139****6666', position: '资深导购', performanceHistory: [], trainingHistory: ['t2'], notes: [{ date: '2026-07-28', type: 'progress', text: '连带搭配培训后连带率从2.3提升至2.7' }] },
+        { id: 'sp3', name: '谭子轩', store: '深圳福田店', joinDate: '2025-06-01', phone: '137****7777', position: '导购', performanceHistory: [], trainingHistory: ['t3'], notes: [{ date: '2026-07-28', type: 'problem', text: '护肤基础知识薄弱，需持续跟进' }] },
+        { id: 'sp4', name: '李明轩', store: '北京朝阳店', joinDate: '2025-01-10', phone: '136****5555', position: '导购', performanceHistory: [], trainingHistory: [], notes: [] },
+        { id: 'sp5', name: '孙浩然', store: '杭州西湖店', joinDate: '2024-11-20', phone: '135****4444', position: '导购', performanceHistory: [], trainingHistory: [], notes: [{ date: '2026-07-28', type: 'problem', text: '状态下滑，三项指标均退步' }] },
+        { id: 'sp6', name: '赵嘉怡', store: '成都春熙店', joinDate: '2024-05-01', phone: '134****3333', position: '资深导购', performanceHistory: [], trainingHistory: [], notes: [{ date: '2026-07-28', type: 'problem', text: '客单价明显下滑' }] },
+        { id: 'sp7', name: '吴俊杰', store: '武汉光谷店', joinDate: '2025-02-14', phone: '133****2222', position: '导购', performanceHistory: [], trainingHistory: [], notes: [{ date: '2026-07-28', type: 'problem', text: '连带率退步明显' }] },
+        { id: 'sp8', name: '林晓雨', store: '南京新街口店', joinDate: '2025-04-01', phone: '132****1111', position: '导购', performanceHistory: [], trainingHistory: [], notes: [{ date: '2026-07-28', type: 'problem', text: '三项指标均下滑' }] },
+      ],
+      thresholds: {
+        atv: { yellow: 1200, red: 1000 },
+        upt: { yellow: 2.0, red: 1.5 },
+        exclusive: { yellow: 30, red: 20 },
+        catRatios: {}
+      },
+      manualWatchStores: [
+        { storeName: '杭州西湖店', reason: '连续两个月下滑，需重点关注', addedAt: '2026-07-29' }
+      ],
+      focusStores: [
+        { storeName: '南京新街口店', reason: '三项指标全面下滑，韩品护肤占比过低', addedAt: '2026-07-29' }
+      ],
+      focusByMonth: {
+        '2026-07': ['c8', 'c2'],
+      },
+      uploadedImages: [],
+    };
+  }
+
+  /* v5→v6 迁移函数 */
+  function migrateData(oldData) {
+    const d = JSON.parse(JSON.stringify(oldData));
+    // records 补 date 和 catRatios
+    if (d.records) {
+      d.records = d.records.map(r => ({
+        ...r,
+        date: r.date || (r.month ? r.month + '-15' : ''),
+        catRatios: r.catRatios || {},
+      }));
+    }
+    // trainings 迁移
+    if (d.trainings) {
+      d.trainings = d.trainings.map(t => ({
+        ...t,
+        time: t.time || '',
+        duration: t.duration || 0,
+        empCount: t.empCount || (t.emps ? t.emps.length : 0),
+        topic: t.topic || t.note || '',
+        content: t.content || '',
+        observations: t.observations || [],
+        causes: t.causes || [],
+        suggestions: t.suggestions || [],
+        beforeData: t.beforeData || null,
+        afterData: t.afterData || null,
+        feedback: t.feedback || null,
+        status: t.status || 'completed',
+      }));
+    }
+    // 初始化新字段
+    if (!d.stores) d.stores = defaultData().stores;
+    if (!d.staffProfiles) d.staffProfiles = [];
+    if (!d.thresholds) d.thresholds = defaultData().thresholds;
+    if (!d.manualWatchStores) d.manualWatchStores = [];
+    if (!d.focusStores) d.focusStores = [];
+    return d;
+  }
+
+  /* 确保所有顶层字段和子字段存在 */
+  function ensureCompleteData(d) {
+    if (!d.records) d.records = [];
+    d.records.forEach(r => {
+      if (!r.date) r.date = r.month ? r.month + '-15' : '';
+      if (!r.catRatios) r.catRatios = {};
+    });
+    if (!d.categories) d.categories = defaultData().categories;
+    if (!d.trainings) d.trainings = [];
+    d.trainings.forEach(t => {
+      if (!t.time) t.time = '';
+      if (t.duration === undefined) t.duration = 0;
+      if (t.empCount === undefined) t.empCount = t.emps ? t.emps.length : 0;
+      if (!t.topic) t.topic = t.note || '';
+      if (!t.content) t.content = '';
+      if (!t.observations) t.observations = [];
+      if (!t.causes) t.causes = [];
+      if (!t.suggestions) t.suggestions = [];
+      if (t.beforeData === undefined) t.beforeData = null;
+      if (t.afterData === undefined) t.afterData = null;
+      if (t.feedback === undefined) t.feedback = null;
+      if (!t.status) t.status = 'completed';
+    });
+    if (!d.stores) d.stores = defaultData().stores;
+    if (!d.staffProfiles) d.staffProfiles = [];
+    if (!d.thresholds) d.thresholds = defaultData().thresholds;
+    if (!d.thresholds.atv) d.thresholds.atv = { yellow: 1200, red: 1000 };
+    if (!d.thresholds.upt) d.thresholds.upt = { yellow: 2.0, red: 1.5 };
+    if (!d.thresholds.exclusive) d.thresholds.exclusive = { yellow: 30, red: 20 };
+    if (!d.thresholds.catRatios) d.thresholds.catRatios = {};
+    if (!d.manualWatchStores) d.manualWatchStores = [];
+    if (!d.focusStores) d.focusStores = [];
+    if (!d.focusByMonth) d.focusByMonth = {};
+    if (!d.uploadedImages) d.uploadedImages = [];
+    return d;
+  }
+
+  function loadData() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        return ensureCompleteData(d);
+      }
+      // 尝试从 v5 迁移
+      const oldRaw = localStorage.getItem(OLD_STORE_KEY);
+      if (oldRaw) {
+        try {
+          const oldData = JSON.parse(oldRaw);
+          if (oldData.records) {
+            const migrated = migrateData(oldData);
+            return ensureCompleteData(migrated);
+          }
+        } catch (e) {}
+      }
+    } catch (e) {}
+    return defaultData();
+  }
+
+  let data = loadData();
+
+  function saveData() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+    catch (e) { alert('⚠️ 保存失败，建议先导出 JSON 备份'); }
+  }
+
+  function uid() { return Math.random().toString(36).slice(2, 10); }
+  function $(id) { return document.getElementById(id); }
+
+  function getMonthsList() {
+    const set = new Set();
+    data.records.forEach(r => r.month && set.add(r.month));
+    data.trainings.forEach(t => t.date && set.add(t.date.slice(0, 7)));
+    if (set.size === 0) {
+      const d = new Date(); set.add(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
+    }
+    const d = new Date(); d.setMonth(d.getMonth() + 1);
+    const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    if (!set.has(next)) set.add(next);
+    return Array.from(set).sort().reverse();
+  }
+
+  function getCategoryChildren(parentId) {
+    return data.categories.filter(c => c.parent === parentId);
+  }
+  function getAllSubIds(parentId) {
+    const subs = data.categories.filter(c => c.parent === parentId);
+    let ids = subs.map(s => s.id);
+    subs.forEach(s => { ids = ids.concat(getAllSubIds(s.id)); });
+    return ids;
+  }
+
+  function fillMonthSelect(sel, includeExtra) {
+    const months = getMonthsList();
+    sel.innerHTML = months.map(m => `<option value="${m}">${m}</option>`).join('');
+  }
+
+  /* 门店下拉填充 */
+  function fillStoreSelect(sel, includeAll) {
+    if (!sel) return;
+    let html = '';
+    if (includeAll) html += '<option value="">全部门店</option>';
+    html += data.stores.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+    sel.innerHTML = html;
+  }
+  function refreshStoreSelects() {
+    // f_store 是 input + datalist（可自定义输入）
+    const dl = $('storeList');
+    if (dl) dl.innerHTML = data.stores.map(s => `<option value="${s.name}">`).join('');
+    // 其他下拉框保持 select 方式
+    fillStoreSelect($('t_store'), false);
+    fillStoreSelect($('watch_store'), false);
+    fillStoreSelect($('focus_store_select'), false);
+    fillStoreSelect($('cmp_store'), false);
+    fillStoreSelect($('filterStore'), true);
+  }
+
+  /* 导航 */
+  function switchPage(page, el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (el) el.classList.add('active');
+    else {
+      const navEl = document.querySelector('[data-page="' + page + '"]');
+      if (navEl) navEl.classList.add('active');
+    }
+    ['home','input','staff','category','focus','compare','training','analysis'].forEach(p => {
+      const e2 = $('page-' + p);
+      if (e2) e2.style.display = 'none';
+    });
+    const target = $('page-' + page);
+    if (target) target.style.display = 'block';
+    $('mask').classList.remove('show');
+    $('drawer').classList.remove('open');
+    if (page === 'home') renderHome();
+    if (page === 'input') renderInput();
+    if (page === 'staff') renderStaff();
+    if (page === 'category') renderCategoryTree();
+    if (page === 'focus') renderFocus();
+    if (page === 'compare') renderCompare();
+    if (page === 'training') renderTrainingList();
+    if (page === 'analysis') renderAnalysis();
+  }
+  function goHome() { switchPage('home', document.querySelector('[data-page=home]')); }
+  function switchToInput() {
+    // 录入业绩快捷入口：清除所有 active，直接切到 input 页
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    ['home','input','staff','category','focus','compare','training','analysis'].forEach(p => {
+      const e2 = $('page-' + p);
+      if (e2) e2.style.display = 'none';
+    });
+    const target = $('page-input');
+    if (target) target.style.display = 'block';
+    $('mask').classList.remove('show');
+    $('drawer').classList.remove('open');
+    renderInput();
+  }
+  function toggleDrawer() { $('drawer').classList.toggle('open'); $('mask').classList.toggle('show'); }
+  function openModal(id) { $(id).classList.add('show'); }
+  function closeModal(id) { $(id).classList.remove('show'); }
+
+  function switchMetric(m, el) {
+    currentMetric = m;
+    document.querySelectorAll('.metric-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderHome();
+  }
+
+  /* ==============================
+     第3步：首页重构
+     ============================== */
+
+  /* 培训安排双栏 */
+  function renderTrainColumns() {
+    const month = $('currentMonth').value;
+    if (!month) { $('trainColumns').innerHTML = ''; return; }
+    const trainings = data.trainings.filter(t => t.date && t.date.startsWith(month));
+    const completed = trainings.filter(t => t.status === 'completed');
+    const planned = trainings.filter(t => t.status === 'planned' || (!t.status && new Date(t.date) >= new Date()));
+
+    const renderItem = (t) => {
+      const cat = data.categories.find(c => c.id === t.catId);
+      return `
+        <div class="train-item" onclick="openFeedbackGenerator('${t.id}')">
+          <div class="ti-date">📅 ${t.date}${t.time ? ' ' + t.time : ''}</div>
+          <div class="ti-store">🏪 ${t.store}</div>
+          <div class="ti-content">${t.topic || t.note || (cat ? cat.name : '未分类')}</div>
+          <div class="ti-meta">👥 ${t.emps ? t.emps.length : 0} 人 · ${t.duration || 0}h ${t.empCount ? '· 带教' + t.empCount + '人' : ''}</div>
+        </div>
+      `;
+    };
+
+    $('trainColumns').innerHTML = `
+      <div class="train-column">
+        <h4>✅ 已完成培训记录（${completed.length}）</h4>
+        ${completed.length ? completed.map(renderItem).join('') : '<div class="empty" style="padding:20px;">本月暂无已完成培训</div>'}
+      </div>
+      <div class="train-column">
+        <h4>📅 待开展培训计划（${planned.length}）</h4>
+        ${planned.length ? planned.map(renderItem).join('') : '<div class="empty" style="padding:20px;">本月暂无待开展培训</div>'}
+      </div>
+    `;
+  }
+
+  /* 业绩数据大盘 */
+  function renderStoreOverview(month) {
+    const recs = data.records.filter(r => r.month === month);
+    if (!recs.length) {
+      $('storeOverview').innerHTML = '<div class="empty"><div class="icon">📊</div>本月还没有业绩数据</div>';
+      return;
+    }
+    // 按门店分组
+    const storeMap = {};
+    recs.forEach(r => {
+      if (!storeMap[r.store]) storeMap[r.store] = [];
+      storeMap[r.store].push(r);
+    });
+    const stores = Object.keys(storeMap).sort();
+    $('storeOverview').innerHTML = `
+      <table class="data">
+        <thead><tr><th>门店</th><th>人数</th><th>平均客单价</th><th>平均连带率</th><th>平均自营占比</th></tr></thead>
+        <tbody>${stores.map(s => {
+          const list = storeMap[s];
+          const avgAtv = (list.reduce((sum, r) => sum + (Number(r.atv) || 0), 0) / list.length).toFixed(0);
+          const avgUpt = (list.reduce((sum, r) => sum + (Number(r.upt) || 0), 0) / list.length).toFixed(2);
+          const avgExc = (list.reduce((sum, r) => sum + (Number(r.exclusive) || 0), 0) / list.length).toFixed(1);
+          return `<tr>
+            <td><span class="store-tag">${s}</span></td>
+            <td>${list.length}</td>
+            <td><strong>${avgAtv}</strong></td>
+            <td><strong>${avgUpt}</strong></td>
+            <td><strong>${avgExc}%</strong></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    `;
+  }
+
+  /* 阈值检查 */
+  function checkThreshold(value, metric) {
+    const v = Number(value) || 0;
+    const th = data.thresholds[metric];
+    if (!th) return 'ok';
+    if (th.red && v < th.red) return 'red';
+    if (th.yellow && v < th.yellow) return 'yellow';
+    return 'ok';
+  }
+
+  /* 获取门店预警信息 */
+  function getStoreAlerts(month) {
+    const recs = data.records.filter(r => r.month === month);
+    const storeMap = {};
+    recs.forEach(r => {
+      if (!storeMap[r.store]) storeMap[r.store] = [];
+      storeMap[r.store].push(r);
+    });
+    const alerts = [];
+    Object.keys(storeMap).forEach(store => {
+      const list = storeMap[store];
+      const avgAtv = list.reduce((s, r) => s + (Number(r.atv) || 0), 0) / list.length;
+      const avgUpt = list.reduce((s, r) => s + (Number(r.upt) || 0), 0) / list.length;
+      const avgExc = list.reduce((s, r) => s + (Number(r.exclusive) || 0), 0) / list.length;
+      const atvStatus = checkThreshold(avgAtv, 'atv');
+      const uptStatus = checkThreshold(avgUpt, 'upt');
+      const excStatus = checkThreshold(avgExc, 'exclusive');
+      // 取最严重的级别
+      const severity = [atvStatus, uptStatus, excStatus].includes('red') ? 'red' :
+                       [atvStatus, uptStatus, excStatus].includes('yellow') ? 'yellow' : 'ok';
+      if (severity !== 'ok') {
+        alerts.push({ store, avgAtv, avgUpt, avgExc, severity, atvStatus, uptStatus, excStatus });
+      }
+    });
+    // 加入手动添加的门店
+    data.manualWatchStores.forEach(w => {
+      if (!alerts.find(a => a.store === w.storeName)) {
+        const list = storeMap[w.storeName] || [];
+        const avgAtv = list.length ? list.reduce((s, r) => s + (Number(r.atv) || 0), 0) / list.length : 0;
+        const avgUpt = list.length ? list.reduce((s, r) => s + (Number(r.upt) || 0), 0) / list.length : 0;
+        const avgExc = list.length ? list.reduce((s, r) => s + (Number(r.exclusive) || 0), 0) / list.length : 0;
+        alerts.push({ store: w.storeName, avgAtv, avgUpt, avgExc, severity: 'yellow', manual: true, reason: w.reason });
+      }
+    });
+    // 按严重程度排序
+    alerts.sort((a, b) => {
+      if (a.severity === 'red' && b.severity !== 'red') return -1;
+      if (a.severity !== 'red' && b.severity === 'red') return 1;
+      return (b.avgAtv + b.avgUpt * 100 + b.avgExc) - (a.avgAtv + a.avgUpt * 100 + a.avgExc);
+    });
+    return alerts;
+  }
+
+  function renderStoreAlerts() {
+    const month = $('currentMonth').value;
+    const alerts = getStoreAlerts(month);
+    if (!alerts.length) {
+      $('storeAlerts').innerHTML = '<div class="empty"><div class="icon">✅</div>本月暂无预警门店</div>';
+      return;
+    }
+    $('storeAlerts').innerHTML = `
+      <div class="alert-grid">
+        ${alerts.map(a => `
+          <div class="alert-card ${a.severity}" onclick="switchPage('compare', document.querySelector('[data-page=compare]'))">
+            <div class="ac-store">${a.store}</div>
+            <span class="ac-label">${a.severity === 'red' ? '🔴 严重不达标' : '🟡 需关注'}</span>
+            <div class="ac-metrics">
+              <span>客单价 <strong>${a.avgAtv.toFixed(0)}</strong></span>
+              <span>连带率 <strong>${a.avgUpt.toFixed(2)}</strong></span>
+              <span>自营占比 <strong>${a.avgExc.toFixed(1)}%</strong></span>
+            </div>
+            <div class="ac-hint">${a.manual ? '📌 ' + (a.reason || '手动添加') : '💡 点击查看培训前后对比'}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  function saveThresholds() {
+    data.thresholds.atv.yellow = Number($('th_atv_yellow').value) || 1200;
+    data.thresholds.atv.red = Number($('th_atv_red').value) || 1000;
+    data.thresholds.upt.yellow = Number($('th_upt_yellow').value) || 2.0;
+    data.thresholds.upt.red = Number($('th_upt_red').value) || 1.5;
+    data.thresholds.exclusive.yellow = Number($('th_exc_yellow').value) || 30;
+    data.thresholds.exclusive.red = Number($('th_exc_red').value) || 20;
+    saveData();
+    closeModal('thresholdModal');
+    renderStoreAlerts();
+    alert('✅ 阈值已保存');
+  }
+
+  function addWatchStore() {
+    const storeName = $('watch_store').value;
+    const reason = $('watch_reason').value.trim();
+    if (!storeName) { alert('请选择门店'); return; }
+    if (data.manualWatchStores.find(w => w.storeName === storeName)) {
+      alert('该门店已在手动关注列表中'); return;
+    }
+    data.manualWatchStores.push({ storeName, reason, addedAt: new Date().toISOString().slice(0, 10) });
+    saveData();
+    closeModal('watchStoreModal');
+    $('watch_reason').value = '';
+    renderStoreAlerts();
+  }
+
+  function delWatchStore(storeName) {
+    if (!confirm('移除该门店的关注？')) return;
+    data.manualWatchStores = data.manualWatchStores.filter(w => w.storeName !== storeName);
+    saveData();
+    renderStoreAlerts();
+  }
+
+  /* 进步/退步榜——按门店横向滑动 */
+  function renderStoreProgressScroll() {
+    const month = $('currentMonth').value;
+    if (!month) { $('storeProgressScroll').innerHTML = ''; return; }
+    const [y, m] = month.split('-').map(Number);
+    const prevDate = new Date(y, m - 2, 1);
+    const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+
+    const curRecs = data.records.filter(r => r.month === month);
+    const prevRecs = data.records.filter(r => r.month === prevMonth);
+
+    const curMap = {};
+    curRecs.forEach(r => {
+      const key = r.name + '@@' + r.store;
+      if (!curMap[key] || (curMap[key].createdAt||'') < (r.createdAt||'')) curMap[key] = r;
+    });
+    const prevMap = {};
+    prevRecs.forEach(r => {
+      const key = r.name + '@@' + r.store;
+      if (!prevMap[key] || (prevMap[key].createdAt||'') < (r.createdAt||'')) prevMap[key] = r;
+    });
+
+    // 按门店分组
+    const storeItems = {};
+    Object.keys(curMap).forEach(key => {
+      const cur = curMap[key];
+      const prev = prevMap[key];
+      const curVal = Number(cur[currentMetric]) || 0;
+      const prevVal = prev ? (Number(prev[currentMetric]) || 0) : 0;
+      const diff = prevVal ? ((curVal - prevVal) / prevVal * 100) : 0;
+      if (!storeItems[cur.store]) storeItems[cur.store] = [];
+      storeItems[cur.store].push({ key, name: cur.name, diff, cur: curVal, prev: prevVal });
+    });
+
+    const storeNames = Object.keys(storeItems).sort();
+    const metricLabel = { atv: '客单价', upt: '连带率', exclusive: '独家占比' }[currentMetric];
+    $('progressMetricLabel').textContent = `(按${metricLabel})`;
+
+    if (!storeNames.length) {
+      $('storeProgressScroll').innerHTML = '<div class="empty"><div class="icon">📊</div>本月还没有员工业绩数据</div>';
+      return;
+    }
+
+    $('storeProgressScroll').innerHTML = storeNames.map(store => {
+      const items = storeItems[store].sort((a, b) => b.diff - a.diff);
+      return renderStoreProgressCard(store, items, currentMetric);
+    }).join('');
+  }
+
+  function renderStoreProgressCard(storeName, items, metric) {
+    const positive = items.filter(i => i.diff > 0);
+    const negative = items.filter(i => i.diff < 0).reverse();
+    const displayed = [...positive.slice(0, 6), ...negative.slice(0, 4)];
+    const metricLabel = { atv: '客单价', upt: '连带率', exclusive: '独家占比' }[metric];
+    const metricUnit = '%';
+
+    if (!displayed.length) {
+      return `
+        <div class="store-progress-card">
+          <div class="spc-title">🏪 ${storeName}</div>
+          <div class="empty" style="padding:20px;">暂无可对比数据</div>
+        </div>
+      `;
+    }
+
+    const maxAbs = Math.max(...displayed.map(d => Math.abs(d.diff)), 1);
+
+    let barsHtml = `
+      <div style="position: relative; padding-left: 36px;">
+        <div class="bar-chart">
+          <div class="zero-line"></div>
+    `;
+    displayed.forEach(d => {
+      const isPos = d.diff > 0;
+      const heightPct = Math.min(45, Math.abs(d.diff) / maxAbs * 45);
+      const cls = isPos ? 'pos' : 'neg';
+      const sign = isPos ? '+' : '';
+      const lastName = d.name.slice(-2);
+      barsHtml += `
+        <div class="bar">
+          <div class="fill ${cls}" style="height:${heightPct}%; ${isPos ? '' : 'align-self:flex-start; margin-top:auto;'}">
+            <div class="value-label">${sign}${d.diff.toFixed(1)}${metricUnit}</div>
+          </div>
+          <div class="label" title="${d.name}">${lastName}</div>
+        </div>
+      `;
+    });
+    barsHtml += `</div></div>`;
+
+    // 退步员工名单
+    const needAttention = items.filter(i => i.diff < 0).sort((a,b) => a.diff - b.diff);
+    let namesHtml = '';
+    if (needAttention.length) {
+      namesHtml = `
+        <div class="spc-names">
+          ⚠️ 退步员工：${needAttention.slice(0, 5).map(i => `${i.name}(${i.diff.toFixed(0)}%)`).join('、')}
+        </div>
+      `;
+    }
+
+    return `
+      <div class="store-progress-card">
+        <div class="spc-title">🏪 ${storeName}</div>
+        ${barsHtml}
+        ${namesHtml}
+      </div>
+    `;
+  }
+
+  function renderHome() {
+    fillMonthSelect($('currentMonth'));
+    const has0707 = Array.from($('currentMonth').options).some(o => o.value === '2026-07');
+    if (has0707 && !$('currentMonth').dataset.touched) $('currentMonth').value = '2026-07';
+    const month = $('currentMonth').value;
+    $('periodText').textContent = formatDateWithQuarter();
+    const focusCats = data.focusByMonth[month] || [];
+    if (focusCats.length) {
+      $('focusTag').style.display = 'inline-flex';
+      const names = focusCats.map(id => data.categories.find(x => x.id === id)?.name).filter(Boolean).join(' / ');
+      $('focusTag').textContent = '🎯 本月重点：' + names;
+    } else {
+      $('focusTag').style.display = 'none';
+    }
+
+    const recs = data.records.filter(r => r.month === month);
+    const empKeys = new Set(recs.map(r => r.name + '|' + r.store));
+    const totalEmp = empKeys.size;
+    const avgAtv = recs.length ? (recs.reduce((s, r) => s + (Number(r.atv) || 0), 0) / recs.length) : 0;
+    const avgUpt = recs.length ? (recs.reduce((s, r) => s + (Number(r.upt) || 0), 0) / recs.length) : 0;
+    const avgExc = recs.length ? (recs.reduce((s, r) => s + (Number(r.exclusive) || 0), 0) / recs.length) : 0;
+
+    // 培训安排
+    renderTrainColumns();
+
+    // 业绩大盘
+    renderStoreOverview(month);
+
+    // 重点门店提醒
+    renderStoreAlerts();
+
+    // 进步/退步榜
+    renderStoreProgressScroll();
+  }
+
+  /* ==============================
+     图片识别（保留原有 OCR 功能）
+     ============================== */
+  let currentImages = [];
+  let worker = null;
+
+  function readImage(file) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result); r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  async function getWorker() {
+    if (worker) return worker;
+    $('ocrProgress').classList.add('show');
+    $('ocrText').textContent = '⚙️ 初始化 OCR 引擎（首次约 10-20 秒）...';
+    $('ocrBar').style.width = '10%';
+    worker = await Tesseract.createWorker(['chi_sim', 'eng'], 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          $('ocrBar').style.width = Math.round(m.progress * 100) + '%';
+          $('ocrText').textContent = `🔍 识别中... ${Math.round(m.progress * 100)}%`;
+        } else if (m.status) {
+          $('ocrText').textContent = `⚙️ ${m.status}...`;
+        }
+      }
+    });
+    return worker;
+  }
+
+  async function handleImages(e) {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    currentImages = [];
+    $('imagePreview').innerHTML = '';
+    for (const f of files) {
+      const dataUrl = await readImage(f);
+      currentImages.push({ name: f.name, data: dataUrl });
+    }
+    $('imagePreview').innerHTML = currentImages.map(img => `
+      <div class="item"><img src="${img.data}" alt="${img.name}" /><div class="badge-ocr">${img.name}</div></div>
+    `).join('');
+    if (currentImages.length) await recognizeBatch(currentImages[0]);
+  }
+
+  async function recognizeBatch(img) {
+    if (!img) return;
+    $('recognizeCard').style.display = 'none';
+    $('rawTextCard').style.display = 'none';
+    $('ocrProgress').classList.add('show');
+    $('ocrBar').style.width = '0%';
+    $('ocrText').textContent = '🔍 准备识别...';
+    try {
+      const w = await getWorker();
+      $('ocrText').textContent = '🔍 正在识别整张图片（约需 5-15 秒）...';
+      const result = await w.recognize(img.data);
+      const text = result.data.text;
+      console.log('OCR 原文：', text);
+
+      $('rawText').textContent = text;
+      $('rawTextCard').style.display = 'block';
+
+      const employees = parseBatchOcr(text);
+      console.log('解析出的员工：', employees);
+
+      renderBatchTable(employees);
+
+      $('recognizeCard').style.display = 'block';
+      $('ocrText').textContent = `✅ 识别完成，共识别 ${employees.length} 人，请核对`;
+      $('ocrBar').style.width = '100%';
+      setTimeout(() => $('ocrProgress').classList.remove('show'), 3000);
+    } catch (err) {
+      console.error(err);
+      $('ocrText').textContent = '❌ 识别失败：' + err.message + '（可手动添加行）';
+      $('recognizeCard').style.display = 'block';
+      renderBatchTable([]);
+    }
+  }
+
+  function reRecognize() {
+    if (currentImages.length) recognizeBatch(currentImages[0]);
+    else alert('请先上传图片');
+  }
+
+  /**
+   * 批量解析 OCR 文本，按行提取员工数据
+   * 策略：不依赖固定关键词，智能提取每行的"中文姓名 + 后面的数字"
+   */
+  function parseBatchOcr(text) {
+    const employees = [];
+    if (!text) return employees;
+
+    // 按换行符分割，保留有效行
+    const lines = text.split(/\n/).map(l => l.trim()).filter(l => l.length >= 2);
+    console.log('OCR 共', lines.length, '行文本');
+
+    // 先尝试找表头行（含"姓名/员工"或"客单价/单价"等关键词的行）
+    let headerIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (/姓名|员工名|店员|导购|BA名/i.test(lines[i]) || /宔?单价|客单价|ATV/i.test(lines[i])) {
+        headerIdx = i;
+        break;
+      }
+    }
+    const startIdx = headerIdx >= 0 ? headerIdx + 1 : 0;
+
+    // 从表头下一行开始解析
+    for (let i = startIdx; i < lines.length; i++) {
+      const emp = parseLine(lines[i]);
+      if (emp && emp.name && (emp.atv || emp.upt || emp.exclusive)) {
+        employees.push(emp);
+      }
+    }
+
+    // 如果没解析出来，尝试所有行
+    if (employees.length === 0) {
+      console.log('表头策略失败，尝试全量解析...');
+      for (const line of lines) {
+        const emp = parseLine(line);
+        if (emp && emp.name && (emp.atv || emp.upt || emp.exclusive)) {
+          employees.push(emp);
+        }
+      }
+    }
+
+    // 如果还是 0 人，尝试"多行合并"策略：有些 OCR 输出会把一个人的数据拆成多行
+    if (employees.length === 0) {
+      console.log('单行策略失败，尝试多行合并...');
+      const merged = parseMultiLine(lines);
+      employees.push(...merged);
+    }
+
+    // 去重：同名的只保留第一条
+    const seen = new Set();
+    return employees.filter(e => {
+      const key = e.name + '|' + (e.atv || '') + '|' + (e.upt || '');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+  /**
+   * 解析单行，提取姓名 + 三个指标
+   * 兼容多种格式：
+   *   "曾婷婷 66666.6 0 0 0 0 0 0"  → 纯数字格式
+   *   "曾婷婷 客单价1280 连带率2.1 独家占比32%"  → 带关键词格式
+   *   "曾婷婷 1,280 2.10 32.0"  → 带千分位/小数
+   *   "1 曾婷婷 1280 2.1 32"  → 带序号
+   */
+  function parseLine(line) {
+    if (!line || line.length < 2) return null;
+
+    // 跳过表头和统计行
+    if (/^(姓名|员工|店员|导购|排名|合计|总计|平均|小计|序号|编号)/.test(line)) return null;
+    if (/^(宔?单价|客单价|连带率|连单率|独家|占比|销售额|笔数|件数|目标|达成)/.test(line)) return null;
+    // 跳过纯数字或纯符号行
+    if (!/[\u4e00-\u9fa5a-zA-Z]/.test(line)) return null;
+
+    let name = '';
+    let atv = '';
+    let upt = '';
+    let exclusive = '';
+
+    // ---- 策略1：带关键词的行 ----
+    // 客单价：支持"客单价""单价""宔单价""ATV"
+    const atvM = line.match(/(?:宔?单价|客单价|ATV)\s*[:：]?\s*(\d[\d,]*[.,]?\d*)/i);
+    // 连带率：支持"连带率""连帯率""连单率""UPT"
+    const uptM = line.match(/(?:连[帯带单]?\s*率|UPT)\s*[:：]?\s*(\d+[.,]?\d*)/i);
+    // 独家占比：支持"独家品占比""独家占比""独家品""自营占比""自营品占比"
+    const excM = line.match(/(?:独家品?\s*占比|独家\s*占比|独家品?|自营品?\s*占比|自营\s*占比)\s*[:：]?\s*(\d+[.,]?\d*)\s*%?/i);
+
+    if (atvM) atv = atvM[1].replace(/,/g, '');
+    if (uptM) upt = uptM[1].replace(/,/g, '');
+    if (excM) exclusive = excM[1].replace(/[,%]/g, '');
+
+    // 如果找到了带关键词的指标，姓名就是行首的中文
+    if (atvM || uptM || excM) {
+      const nameM = line.match(/([\u4e00-\u9fa5]{2,4})/);
+      if (nameM) name = nameM[1];
+    }
+
+    // ---- 策略2：纯数字行（无关键词）----
+    // 格式："姓名 数字 数字 数字" 或 "序号 姓名 数字 数字 数字"
+    if (!name || (!atv && !upt && !exclusive)) {
+      // 提取行中所有中文片段（可能是姓名）
+      const cnMatches = line.match(/[\u4e00-\u9fa5]{2,4}/g);
+      // 提取行中所有数字
+      const numMatches = line.match(/(\d[\d,]*[.,]?\d*)/g) || [];
+
+      if (cnMatches && numMatches.length >= 2) {
+        // 姓名取第一个中文片段（2-4 字），跳过"合计""总计"等
+        const skipWords = ['合计', '总计', '平均', '小计', '排名'];
+        const nameCandidate = cnMatches.find(c => !skipWords.includes(c) && c.length >= 2);
+        if (nameCandidate) name = nameCandidate;
+
+        // 清洗数字
+        const cleanNums = numMatches.map(n => n.replace(/,/g, '').replace(/%/g, ''));
+        console.log(`行 "${line.slice(0, 30)}..." → 姓名=${name}, 数字=`, cleanNums);
+
+        if (name && cleanNums.length >= 2) {
+          // 按数值特征智能分类
+          // 客单价：通常 >= 100 的较大数值
+          // 连带率：通常 0.5-5.0 的小数
+          // 独家占比/自营占比：通常 0-100 的整数或小数
+
+          // 过滤掉可能是"序号"的小整数（1-50 出现在姓名前面的）
+          const namePos = line.indexOf(name);
+          const numsAfterName = cleanNums.filter((n, i) => {
+            // 找到这个数字在原行的位置
+            const numStr = numMatches[i];
+            const numPos = line.indexOf(numStr);
+            return numPos > namePos;
+          });
+
+          const candidates = numsAfterName.length >= 2 ? numsAfterName : cleanNums;
+
+          // 客单价：第一个 >= 50 的数（有些小店客单价可能不到 100）
+          const atvCandidate = candidates.find(n => Number(n) >= 50);
+          if (atvCandidate && !atv) atv = atvCandidate;
+
+          // 连带率：0-10 之间且含小数点的
+          const uptCandidate = candidates.find(n => {
+            const v = Number(n);
+            return v > 0 && v <= 10 && n.includes('.') && n !== atv;
+          });
+          if (uptCandidate && !upt) upt = uptCandidate;
+
+          // 独家占比：剩余的 0-100 之间的数
+          const usedNums = [atv, upt].filter(Boolean);
+          const remaining = candidates.filter(n => !usedNums.includes(n));
+          const excCandidate = remaining.find(n => {
+            const v = Number(n);
+            return v >= 0 && v <= 100;
+          });
+          if (excCandidate && !exclusive) exclusive = excCandidate;
+        }
+      }
+    }
+
+    if (!name) return null;
+    if (!atv && !upt && !exclusive) return null;  // 没有有效数字的不算
+    return { name, atv, upt, exclusive };
+  }
+
+  /**
+   * 多行合并解析：有些 OCR 把一个人的数据拆成多行
+   * 例如：
+   *   曾婷婷
+   *   1280 2.1 32%
+   *   李明轩
+   *   1150 1.9 28%
+   */
+  function parseMultiLine(lines) {
+    const result = [];
+    let currentName = '';
+    let currentNums = [];
+
+    for (const line of lines) {
+      // 如果这行有中文姓名（2-4字）
+      const nameM = line.match(/^([\u4e00-\u9fa5]{2,4})\s*$/);
+      if (nameM) {
+        // 如果之前已经积累了姓名+数字，先保存
+        if (currentName && currentNums.length >= 2) {
+          const emp = classifyNums(currentName, currentNums);
+          if (emp) result.push(emp);
+        }
+        currentName = nameM[1];
+        currentNums = [];
+        continue;
+      }
+
+      // 如果这行有中文姓名 + 数字
+      const nameWithNums = line.match(/^([\u4e00-\u9fa5]{2,4})\s+(\d[\d,]*[.,]?\d*[\s%]*)+/);
+      if (nameWithNums) {
+        // 先保存之前的
+        if (currentName && currentNums.length >= 2) {
+          const emp = classifyNums(currentName, currentNums);
+          if (emp) result.push(emp);
+        }
+        currentName = nameWithNums[1];
+        const nums = line.match(/(\d[\d,]*[.,]?\d*)/g) || [];
+        currentNums = nums.map(n => n.replace(/,/g, '').replace(/%/g, ''));
+        continue;
+      }
+
+      // 如果这行只有数字，追加到当前姓名
+      const numsOnly = line.match(/^(\d[\d,]*[.,]?\d*[\s%]*)+$/);
+      if (numsOnly && currentName) {
+        const nums = line.match(/(\d[\d,]*[.,]?\d*)/g) || [];
+        currentNums.push(...nums.map(n => n.replace(/,/g, '').replace(/%/g, '')));
+      }
+    }
+
+    // 保存最后一个
+    if (currentName && currentNums.length >= 2) {
+      const emp = classifyNums(currentName, currentNums);
+      if (emp) result.push(emp);
+    }
+
+    return result;
+  }
+
+  /**
+   * 根据数字特征分类：客单价/连带率/独家占比
+   */
+  function classifyNums(name, nums) {
+    if (!name || nums.length < 2) return null;
+    let atv = '', upt = '', exclusive = '';
+
+    // 客单价：>= 50 的较大数
+    const atvN = nums.find(n => Number(n) >= 50);
+    if (atvN) atv = atvN;
+
+    // 连带率：0-10 之间含小数点
+    const uptN = nums.find(n => {
+      const v = Number(n);
+      return v > 0 && v <= 10 && n.includes('.') && n !== atv;
+    });
+    if (uptN) upt = uptN;
+
+    // 独家占比：剩余的 0-100 之间的数
+    const used = [atv, upt].filter(Boolean);
+    const remaining = nums.filter(n => !used.includes(n));
+    const excN = remaining.find(n => {
+      const v = Number(n);
+      return v >= 0 && v <= 100;
+    });
+    if (excN) exclusive = excN;
+
+    if (!atv && !upt && !exclusive) return null;
+    return { name, atv, upt, exclusive };
+  }
+
+  /* 渲染批量编辑表格 */
+  function renderBatchTable(employees) {
+    const tbody = $('batchTbody');
+    if (!employees.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:20px;">未识别到员工数据，请点"＋ 添加一行"手动录入</td></tr>';
+    } else {
+      tbody.innerHTML = employees.map((emp, idx) => renderBatchRow(emp, idx)).join('');
+    }
+    updateBatchCount();
+  }
+
+  function renderBatchRow(emp, idx) {
+    return `
+      <tr data-row="${idx}">
+        <td style="color:var(--text-muted); text-align:center;">${idx + 1}</td>
+        <td><input type="text" class="batch-name" value="${emp.name || ''}" placeholder="姓名" style="width:100%; border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:13px;" /></td>
+        <td><input type="number" class="batch-atv" value="${emp.atv || ''}" step="0.1" placeholder="0" style="width:80px; border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:13px;" /></td>
+        <td><input type="number" class="batch-upt" value="${emp.upt || ''}" step="0.01" placeholder="0" style="width:70px; border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:13px;" /></td>
+        <td><input type="number" class="batch-exc" value="${emp.exclusive || ''}" step="0.1" placeholder="0" style="width:70px; border:1px solid var(--border); border-radius:6px; padding:6px 8px; font-size:13px;" /></td>
+        <td><button class="btn danger small" onclick="removeBatchRow(this)">✕</button></td>
+      </tr>
+    `;
+  }
+
+  function addEmptyRow() {
+    const tbody = $('batchTbody');
+    if (tbody.querySelector('td[colspan]')) tbody.innerHTML = '';
+    const idx = tbody.children.length;
+    tbody.insertAdjacentHTML('beforeend', renderBatchRow({}, idx));
+    updateBatchCount();
+  }
+
+  function removeBatchRow(btn) {
+    btn.closest('tr').remove();
+    const rows = $('batchTbody').querySelectorAll('tr');
+    rows.forEach((r, i) => {
+      const firstCell = r.querySelector('td:first-child');
+      if (firstCell) firstCell.textContent = i + 1;
+      r.dataset.row = i;
+    });
+    updateBatchCount();
+  }
+
+  function updateBatchCount() {
+    const rows = $('batchTbody').querySelectorAll('tr');
+    const validRows = Array.from(rows).filter(r => !r.querySelector('td[colspan]'));
+    const count = validRows.length;
+    $('empCount').textContent = count;
+    $('saveCount').textContent = count;
+  }
+
+  /* 保存批量记录 */
+  function submitBatchRecords() {
+    const month = $('f_month').value;
+    const store = $('f_store').value;
+    const note = $('f_note').value.trim();
+    const date = $('f_date').value || (month ? month + '-15' : '');
+    if (!month || !store) { alert('请先填写月份和店铺'); return; }
+
+    const rows = $('batchTbody').querySelectorAll('tr');
+    const records = [];
+    for (const r of rows) {
+      if (r.querySelector('td[colspan]')) continue;
+      const name = r.querySelector('.batch-name').value.trim();
+      if (!name) continue;
+      records.push({
+        id: uid(), month, date, store, name,
+        atv: r.querySelector('.batch-atv').value,
+        upt: r.querySelector('.batch-upt').value,
+        exclusive: r.querySelector('.batch-exc').value,
+        catRatios: {},
+        note: note,
+        imageData: currentImages[0] ? currentImages[0].data : null,
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    if (!records.length) { alert('没有可保存的记录，请至少填写一个员工姓名'); return; }
+
+    data.records = data.records.concat(records);
+
+    // 自动更新 staffProfile
+    records.forEach(r => {
+      getOrCreateStaffProfile(r.name, r.store);
+    });
+
+    saveData();
+    renderRecentRecords();
+    clearBatch();
+    alert(`✅ 已保存 ${records.length} 条记录（${store} · ${month}）`);
+  }
+
+  function clearBatch() {
+    $('batchTbody').innerHTML = '';
+    $('recognizeCard').style.display = 'none';
+    $('rawTextCard').style.display = 'none';
+    updateBatchCount();
+  }
+
+  /* 录入页 */
+  function renderInput() {
+    fillMonthSelect($('f_month'), true);
+    refreshStoreSelects();
+    // 默认日期
+    if (!$('f_date').value) {
+      const today = new Date().toISOString().slice(0, 10);
+      $('f_date').value = today;
+    }
+    renderRecentRecords();
+  }
+
+  function clearForm() {
+    ['f_note'].forEach(id => { if ($(id)) $(id).value = ''; });
+    currentImages = [];
+    $('imagePreview').innerHTML = '';
+    $('recognizeCard').style.display = 'none';
+    $('rawTextCard').style.display = 'none';
+    $('ocrProgress').classList.remove('show');
+    $('imgUpload').value = '';
+    clearBatch();
+  }
+
+  function renderRecentRecords() {
+    if (!$('f_month')) return;
+    const month = $('f_month').value;
+    if (!month) return;
+    const recs = data.records.filter(r => r.month === month).sort((a,b) => (b.createdAt||'').localeCompare(a.createdAt||''));
+    $('recentRecords').innerHTML = recs.length ? `
+      <table class="data">
+        <thead><tr><th>员工</th><th>店铺</th><th>客单价</th><th>连带率</th><th>独家占比</th><th>日期</th><th></th></tr></thead>
+        <tbody>${recs.map(r => `
+          <tr>
+            <td><strong>${r.name}</strong></td>
+            <td><span class="store-tag">${r.store}</span></td>
+            <td>${r.atv || '-'}</td>
+            <td>${r.upt || '-'}</td>
+            <td>${r.exclusive ? r.exclusive + '%' : '-'}</td>
+            <td style="font-size:11px; color:var(--text-muted);">${r.date || (r.createdAt||'').slice(0,10)}</td>
+            <td>${r.imageData ? `<button class="btn ghost small" onclick="viewImage('${r.id}')">🖼️</button>` : ''}<button class="btn danger small" onclick="delRecord('${r.id}')">✕</button></td>
+          </tr>
+        `).join('')}</tbody>
+      </table>
+    ` : '<div class="empty"><div class="icon">📭</div>本月还没有记录</div>';
+  }
+
+  function viewImage(id) {
+    const r = data.records.find(x => x.id === id);
+    if (!r || !r.imageData) return;
+    const w = window.open('', '_blank');
+    w.document.write(`<title>${r.name} - ${r.month}</title><body style="margin:0; background:#222; display:flex; justify-content:center; align-items:center; min-height:100vh;"><img src="${r.imageData}" style="max-width:100%; max-height:100vh;" /></body>`);
+  }
+
+  function delRecord(id) {
+    if (!confirm('删除这条记录？')) return;
+    data.records = data.records.filter(r => r.id !== id);
+    saveData();
+    renderRecentRecords();
+  }
+
+  function exportRecords() {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `trainer_data_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  }
+  function importRecords(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = function() {
+      try {
+        const obj = JSON.parse(r.result);
+        if (obj.records) {
+          data.records = data.records.concat(obj.records);
+          if (obj.categories) data.categories = mergeCategories(data.categories, obj.categories);
+          if (obj.focusByMonth) data.focusByMonth = { ...data.focusByMonth, ...obj.focusByMonth };
+          if (obj.trainings) data.trainings = data.trainings.concat(obj.trainings);
+          if (obj.stores) data.stores = mergeById(data.stores, obj.stores);
+          if (obj.staffProfiles) data.staffProfiles = mergeById(data.staffProfiles, obj.staffProfiles);
+          saveData();
+          alert('✅ 已导入');
+          renderRecentRecords();
+        }
+      } catch (err) { alert('导入失败：' + err.message); }
+    };
+    r.readAsText(f);
+  }
+  function mergeCategories(e, i) {
+    i.forEach(c => { if (!e.find(x => x.id === c.id)) e.push(c); });
+    return e;
+  }
+  function mergeById(existing, incoming) {
+    incoming.forEach(c => { if (!existing.find(x => x.id === c.id)) existing.push(c); });
+    return existing;
+  }
+
+  /* ==============================
+     第5步：员工业绩库重构
+     ============================== */
+  function getOrCreateStaffProfile(name, store) {
+    let profile = data.staffProfiles.find(p => p.name === name && p.store === store);
+    if (!profile) {
+      profile = {
+        id: uid(), name, store, joinDate: '', phone: '', position: '',
+        performanceHistory: [], trainingHistory: [], notes: []
+      };
+      data.staffProfiles.push(profile);
+    }
+    return profile;
+  }
+
+  function aggregateStaffPerformance(name, store) {
+    return data.records
+      .filter(r => r.name === name && r.store === store)
+      .sort((a, b) => (a.month || '').localeCompare(b.month || ''));
+  }
+
+  function renderStaff() {
+    refreshStoreSelects();
+    // 填充门店筛选
+    const filterStore = $('filterStore');
+    if (filterStore) {
+      const prevVal = filterStore.value;
+      fillStoreSelect(filterStore, true);
+      filterStore.value = prevVal || '';
+    }
+
+    // 员工列表
+    let profiles = data.staffProfiles.slice();
+    const storeFilter = $('filterStore').value;
+    if (storeFilter) profiles = profiles.filter(p => p.store === storeFilter);
+    profiles.sort((a, b) => a.store.localeCompare(b.store) || a.name.localeCompare(b.name));
+
+    if (!profiles.length) {
+      $('staffListPanel').innerHTML = '<div class="empty"><div class="icon">🧑‍💼</div>暂无员工档案</div>';
+      $('staffDetailPanel').innerHTML = '';
+      return;
+    }
+
+    // 默认选中第一个
+    if (!selectedStaffKey || !profiles.find(p => p.name + '@@' + p.store === selectedStaffKey)) {
+      selectedStaffKey = profiles[0].name + '@@' + profiles[0].store;
+    }
+
+    $('staffListPanel').innerHTML = profiles.map(p => {
+      const key = p.name + '@@' + p.store;
+      return `
+        <div class="staff-list-item ${key === selectedStaffKey ? 'active' : ''}" onclick="selectStaff('${p.name}','${p.store}')">
+          <div class="sli-name">${p.name}</div>
+          <div class="sli-meta">${p.store} · ${p.joinDate || '入职日期未填'}</div>
+        </div>
+      `;
+    }).join('');
+
+    // 渲染详情
+    const [name, store] = selectedStaffKey.split('@@');
+    renderStaffDetail(name, store);
+  }
+
+  function selectStaff(name, store) {
+    selectedStaffKey = name + '@@' + store;
+    renderStaff();
+  }
+
+  function renderStaffDetail(name, store) {
+    const profile = getOrCreateStaffProfile(name, store);
+    const recs = aggregateStaffPerformance(name, store);
+
+    // 个人基础信息
+    let html = `
+      <div class="staff-info-grid">
+        <div class="staff-info-item"><label>姓名</label><span>${profile.name}</span></div>
+        <div class="staff-info-item"><label>门店</label><span>${profile.store}</span></div>
+        <div class="staff-info-item"><label>入职时间</label><span>${profile.joinDate || '-'}</span></div>
+        <div class="staff-info-item"><label>职位</label><span>${profile.position || '-'}</span></div>
+      </div>
+    `;
+
+    // 多周期业绩表格
+    html += '<div class="section-title">📊 多周期业绩</div>';
+    if (recs.length) {
+      html += `<table class="data"><thead><tr><th>月份</th><th>客单价</th><th>连带率</th><th>自营占比</th><th>品类占比</th></tr></thead><tbody>`;
+      recs.forEach(r => {
+        const catRatioStr = r.catRatios && Object.keys(r.catRatios).length
+          ? Object.entries(r.catRatios).map(([cid, val]) => {
+              const cat = data.categories.find(c => c.id === cid);
+              return `${cat ? cat.name : cid}:${val}%`;
+            }).join(' / ')
+          : '-';
+        html += `<tr><td>${r.month}</td><td>${r.atv || '-'}</td><td>${r.upt || '-'}</td><td>${r.exclusive ? r.exclusive + '%' : '-'}</td><td style="font-size:11px;">${catRatioStr}</td></tr>`;
+      });
+      html += '</tbody></table>';
+    } else {
+      html += '<div class="empty">暂无业绩数据</div>';
+    }
+
+    // 历次培训记录
+    html += '<div class="section-title">📚 历次培训记录</div>';
+    const myTrainings = data.trainings.filter(t => t.emps && t.emps.includes(name) && t.store === store);
+    if (myTrainings.length) {
+      html += myTrainings.map(t => {
+        const cat = data.categories.find(c => c.id === t.catId);
+        return `
+          <div class="todo-row">
+            <div class="ico">📚</div>
+            <div class="body"><div class="t">${t.date} · ${t.topic || t.note || (cat ? cat.name : '未分类')}</div><div class="s">${t.store} · ${t.status === 'planned' ? '待开展' : '已完成'}</div></div>
+            <span class="badge ${t.status === 'planned' ? 'planned' : 'done'}">${t.status === 'planned' ? '待开展' : '已完成'}</span>
+          </div>
+        `;
+      }).join('');
+    } else {
+      html += '<div class="empty">暂无培训记录</div>';
+    }
+
+    // 进步/问题追踪时间线
+    html += '<div class="section-title">📈 进步/问题追踪</div>';
+    // 自动从业绩数据生成
+    const timelineItems = [];
+    if (recs.length >= 2) {
+      for (let i = 1; i < recs.length; i++) {
+        const prev = recs[i - 1];
+        const cur = recs[i];
+        const atvDiff = (Number(cur.atv) || 0) - (Number(prev.atv) || 0);
+        if (atvDiff > 50) {
+          timelineItems.push({ date: cur.month, type: 'progress', text: `客单价从 ${prev.atv} 提升至 ${cur.atv}（+${atvDiff}）` });
+        } else if (atvDiff < -50) {
+          timelineItems.push({ date: cur.month, type: 'problem', text: `客单价从 ${prev.atv} 下滑至 ${cur.atv}（${atvDiff}）` });
+        }
+      }
+    }
+    // 加入手动 notes
+    (profile.notes || []).forEach(n => {
+      timelineItems.push({ date: n.date, type: n.type, text: n.text });
+    });
+    // 加入培训记录
+    myTrainings.forEach(t => {
+      timelineItems.push({ date: t.date, type: 'training', text: `参加培训：${t.topic || t.note || '培训'}` });
+    });
+    timelineItems.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+    if (timelineItems.length) {
+      html += '<div class="timeline">';
+      html += timelineItems.map(item => {
+        const icon = item.type === 'progress' ? '🟢' : item.type === 'problem' ? '🔴' : '🔵';
+        return `<div class="timeline-item ${item.type}"><div class="ti-text">${icon} ${item.text}</div><div class="ti-date">${item.date}</div></div>`;
+      }).join('');
+      html += '</div>';
+    } else {
+      html += '<div class="empty">暂无追踪记录</div>';
+    }
+
+    // 添加备注
+    html += `
+      <div class="section-title">📝 添加追踪备注</div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <select id="staffNoteType">
+            <option value="progress">进步</option>
+            <option value="problem">问题</option>
+            <option value="training">培训</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <input type="date" id="staffNoteDate" value="${new Date().toISOString().slice(0,10)}" />
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom: 10px;">
+        <input type="text" id="staffNoteText" placeholder="输入备注内容..." />
+      </div>
+      <button class="btn primary small" onclick="addStaffNote('${name}','${store}')">＋ 添加备注</button>
+    `;
+
+    $('staffDetailPanel').innerHTML = html;
+  }
+
+  function addStaffNote(name, store) {
+    const type = $('staffNoteType').value;
+    const date = $('staffNoteDate').value;
+    const text = $('staffNoteText').value.trim();
+    if (!text) { alert('请输入备注内容'); return; }
+    const profile = getOrCreateStaffProfile(name, store);
+    if (!profile.notes) profile.notes = [];
+    profile.notes.push({ date, type, text });
+    saveData();
+    renderStaffDetail(name, store);
+  }
+
+  /* ==============================
+     品类树
+     ============================== */
+  function renderCategoryTree() {
+    const roots = data.categories.filter(c => c.parent === null);
+    $('categoryTree').innerHTML = roots.length ? roots.map(r => {
+      const children = getCategoryChildren(r.id);
+      return `
+        <div class="tree-node">
+          <div class="tree-head">
+            <div><div class="name">🌿 ${r.name}</div><div style="font-size:12px; color:var(--text-sub);">${r.note || '根品类'}</div></div>
+            <button class="btn danger small" onclick="delCategory('${r.id}')">删除</button>
+          </div>
+          ${children.length ? `<div class="tree-children">${children.map(ch => `
+            <div class="tree-child">
+              <span>↳ ${ch.name}</span>
+              <span style="font-size:11px; padding:2px 8px; border-radius:10px; background:var(--primary-soft); color:var(--primary);">${ch.note || '子品类'}</span>
+              <button class="btn danger small" onclick="delCategory('${ch.id}')">✕</button>
+            </div>
+          `).join('')}</div>` : ''}
+        </div>
+      `;
+    }).join('') : '<div class="empty"><div class="icon">🌿</div>还没添加品类</div>';
+  }
+  function addCategory() {
+    const type = $('cat_type').value;
+    const name = $('cat_name').value.trim();
+    const note = $('cat_note').value.trim();
+    const parent = $('cat_parent').value || null;
+    if (!name) { alert('请填写品类名'); return; }
+    if (type === 'root' && parent) { alert('根品类不能选上级'); return; }
+    if (type === 'child' && !parent) { alert('子品类必须选上级'); return; }
+    data.categories.push({ id: uid(), name, parent, note });
+    saveData();
+    renderCategoryTree();
+    refreshCatParentSelect();
+    $('cat_name').value = ''; $('cat_note').value = '';
+    closeModal('categoryModal');
+  }
+  function delCategory(id) {
+    if (!confirm('删除这个品类？子品类也会一起删除。')) return;
+    data.categories = data.categories.filter(c => c.parent !== id && c.id !== id);
+    saveData();
+    renderCategoryTree();
+    refreshCatParentSelect();
+  }
+  function refreshCatParentSelect() {
+    const catParent = $('cat_parent');
+    if (catParent) {
+      catParent.innerHTML = '<option value="">-- 根品类 --</option>' +
+        data.categories.filter(c => c.parent === null).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    }
+    const tCat = $('t_cat');
+    if (tCat) {
+      tCat.innerHTML = data.categories.map(c => {
+        const prefix = c.parent ? '　↳ ' : '🌿 ';
+        return `<option value="${c.id}">${prefix}${c.name}</option>`;
+      }).join('');
+    }
+  }
+
+  /* ==============================
+     当月重点
+     ============================== */
+  let focusTemp = new Set();
+  function renderFocus() {
+    fillMonthSelect($('focusMonth'));
+    const month = $('focusMonth').value;
+    focusTemp = new Set(data.focusByMonth[month] || []);
+    $('focusSelector').innerHTML = data.categories.map(c => {
+      const on = focusTemp.has(c.id);
+      const indent = c.parent ? '　' : '';
+      const isRoot = !c.parent;
+      return `
+        <div style="padding:8px 12px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; ${isRoot?'background:#fafbff;':''}">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="check ${on?'on':''}" onclick="toggleFocusCat('${c.id}', this)">${on?'✓':''}</div>
+            <span style="${isRoot?'font-weight:600;':''}">${indent}${isRoot?'🌿 ':'↳ '}${c.name}</span>
+          </div>
+          ${c.note ? `<span style="font-size:11px; color:var(--text-muted);">${c.note}</span>` : ''}
+        </div>
+      `;
+    }).join('') || '<div class="empty">先去品类树添加节点</div>';
+    renderFocusProgress();
+    renderFocusStores();
+  }
+  function toggleFocusCat(id, el) {
+    if (focusTemp.has(id)) { focusTemp.delete(id); el.classList.remove('on'); el.textContent = ''; }
+    else { focusTemp.add(id); el.classList.add('on'); el.textContent = '✓'; }
+  }
+  function saveFocus() {
+    const month = $('focusMonth').value;
+    if (!focusTemp.size) delete data.focusByMonth[month];
+    else data.focusByMonth[month] = Array.from(focusTemp);
+    saveData();
+    alert('✅ 已保存');
+    renderFocus();
+  }
+  function renderFocusProgress() {
+    const month = $('focusMonth').value;
+    const focusCats = data.focusByMonth[month] || [];
+    const recs = data.records.filter(r => r.month === month);
+    if (!focusCats.length) { $('focusProgressDetail').innerHTML = '<div class="empty"><div class="icon">🎯</div>本月未设置重点品类</div>'; return; }
+    $('focusProgressDetail').innerHTML = focusCats.map(id => {
+      const c = data.categories.find(x => x.id === id);
+      const avgExc = recs.length ? (recs.reduce((s, r) => s + (Number(r.exclusive) || 0), 0) / recs.length) : 0;
+      const target = 50;
+      const pct = Math.min(100, Math.round(avgExc / target * 100));
+      return `
+        <div style="background:#fafbff; border-radius:10px; padding:14px; margin-bottom:10px; border:1px solid var(--border);">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <div style="font-weight:600;">🌿 ${c.name}</div>
+            <div style="font-weight:600; color:var(--green);">${pct}%</div>
+          </div>
+          <div style="height:8px; background:#eef0f5; border-radius:4px; overflow:hidden;">
+            <div style="height:100%; background:linear-gradient(90deg,var(--primary),var(--primary-dark)); width:${pct}%;"></div>
+          </div>
+          <div style="font-size:11px; color:var(--text-sub); margin-top:6px;">独家占比 ${avgExc.toFixed(1)}% / 目标 ${target}%</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  /* 重点跟进门店 */
+  function renderFocusStores() {
+    if (!data.focusStores || !data.focusStores.length) {
+      $('focusStoreList').innerHTML = '<div class="empty"><div class="icon">🏪</div>暂无重点跟进门店</div>';
+      return;
+    }
+    $('focusStoreList').innerHTML = data.focusStores.map(f => `
+      <div class="focus-store-card">
+        <div class="fsc-info">
+          <div class="fsc-name">🏪 ${f.storeName}</div>
+          <div class="fsc-reason">${f.reason || '未填写跟进重点'}</div>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">添加时间：${f.addedAt}</div>
+        </div>
+        <button class="btn danger small" onclick="delFocusStore('${f.storeName}')">移除</button>
+      </div>
+    `).join('');
+  }
+  function addFocusStore() {
+    const storeName = $('focus_store_select').value;
+    const reason = $('focus_reason').value.trim();
+    if (!storeName) { alert('请选择门店'); return; }
+    if (data.focusStores.find(f => f.storeName === storeName)) { alert('该门店已在重点跟进列表中'); return; }
+    data.focusStores.push({ storeName, reason, addedAt: new Date().toISOString().slice(0, 10) });
+    saveData();
+    closeModal('focusStoreModal');
+    $('focus_reason').value = '';
+    renderFocusStores();
+  }
+  function delFocusStore(storeName) {
+    if (!confirm('移除该重点门店？')) return;
+    data.focusStores = data.focusStores.filter(f => f.storeName !== storeName);
+    saveData();
+    renderFocusStores();
+  }
+
+  /* ==============================
+     第6步：培训前后对比增强
+     ============================== */
+  function switchCompareMode(mode, el) {
+    currentCompareMode = mode;
+    document.querySelectorAll('.compare-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    $('compareEmpMode').style.display = mode === 'emp' ? 'block' : 'none';
+    $('compareStoreMode').style.display = mode === 'store' ? 'block' : 'none';
+  }
+
+  function renderCompare() {
+    refreshStoreSelects();
+    // 员工对比模式
+    const emps = Array.from(new Set(data.records.map(r => r.name + '@@' + r.store)));
+    $('cmp_emp').innerHTML = emps.length ? emps.map(e => {
+      const [n, s] = e.split('@@');
+      return `<option value="${e}">${n}（${s}）</option>`;
+    }).join('') : '<option value="">暂无员工</option>';
+    const empKey = $('cmp_emp').value;
+    if (!empKey) { $('compareResult').innerHTML = '<div class="empty">先录入员工业绩</div>'; return; }
+    const empName = empKey.split('@@')[0];
+    const empStore = empKey.split('@@')[1];
+    const myTrainings = data.trainings.filter(t => t.emps.includes(empName) && t.store === empStore);
+    $('cmp_training').innerHTML = myTrainings.map(t => {
+      const cat = data.categories.find(c => c.id === t.catId);
+      return `<option value="${t.id}">${t.date} · ${cat ? cat.name : ''}</option>`;
+    }).join('') || '<option value="">无</option>';
+    const tId = $('cmp_training').value;
+    const training = data.trainings.find(t => t.id === tId);
+    if (!training) {
+      $('compareResult').innerHTML = '<div class="empty"><div class="icon">🔄</div>该员工暂无培训记录<br/>先去「培训记录」添加</div>';
+    } else {
+      const allRecs = data.records.filter(r => r.name === empName && r.store === empStore).sort((a,b) => (a.month||'').localeCompare(b.month||''));
+      const trainMonth = training.date.slice(0, 7);
+      const beforeRec = allRecs.filter(r => r.month < trainMonth).pop();
+      const afterRec = allRecs.filter(r => r.month >= trainMonth)[0];
+      if (!beforeRec || !afterRec) {
+        $('compareResult').innerHTML = `<div class="empty"><div class="icon">⚠️</div>需要该员工培训前 + 培训后 至少 2 个月数据<br/>当前共 ${allRecs.length} 个月</div>`;
+      } else {
+        const fields = [['客单价', 'atv'], ['连带率', 'upt'], ['独家占比(%)', 'exclusive']];
+        $('compareResult').innerHTML = `
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+            <div style="background:#fff7ed; border-radius:10px; padding:14px;">
+              <h4 style="margin:0 0 8px; color:var(--text-sub); font-size:13px;">📅 培训前 ${beforeRec.month}</h4>
+              ${fields.map(([label, key]) => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--border);"><span style="color:var(--text-sub);">${label}</span><strong style="color:var(--primary);">${beforeRec[key] || '-'}${key==='exclusive'?'%':''}</strong></div>`).join('')}
+            </div>
+            <div style="background:#dcfce7; border-radius:10px; padding:14px;">
+              <h4 style="margin:0 0 8px; color:var(--text-sub); font-size:13px;">📚 培训后 ${afterRec.month}</h4>
+              ${fields.map(([label, key]) => `<div style="display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--border);"><span style="color:var(--text-sub);">${label}</span><strong style="color:var(--primary);">${afterRec[key] || '-'}${key==='exclusive'?'%':''}</strong></div>`).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // 门店对比模式
+    const storeTrainings = data.trainings.filter(t => t.store === $('cmp_store').value);
+    $('cmp_store_training').innerHTML = storeTrainings.map(t => {
+      const cat = data.categories.find(c => c.id === t.catId);
+      return `<option value="${t.id}">${t.date} · ${cat ? cat.name : ''}</option>`;
+    }).join('') || '<option value="">无</option>';
+    renderStoreCompare();
+
+    // 批量对比
+    if (tId) {
+      const t = data.trainings.find(x => x.id === tId);
+      const batchHtml = t.emps.map(empName => {
+        const recs2 = data.records.filter(r => r.name === empName && r.store === t.store).sort((a,b) => (a.month||'').localeCompare(b.month||''));
+        if (recs2.length < 2) return '';
+        const before = recs2[recs2.length - 2];
+        const after = recs2[recs2.length - 1];
+        return `
+          <div style="background:#fafbff; border-radius:10px; padding:12px; margin-bottom:8px; border:1px solid var(--border);">
+            <strong>${empName}</strong>
+            <div style="font-size:12px; margin-top:6px;">客单价 ${before.atv||0}→<strong>${after.atv||0}</strong> · 连带率 ${before.upt||0}→<strong>${after.upt||0}</strong> · 独家占比 ${before.exclusive||0}%→<strong>${after.exclusive||0}%</strong></div>
+          </div>
+        `;
+      }).filter(Boolean).join('');
+      $('batchCompare').innerHTML = batchHtml || '<div class="empty">需每位员工至少 2 个月数据</div>';
+    }
+  }
+
+  function renderStoreCompare() {
+    const store = $('cmp_store').value;
+    const trainingId = $('cmp_store_training').value;
+    if (!store || !trainingId) {
+      $('storeCompareResult').innerHTML = '<div class="empty">请选择门店和培训</div>';
+      return;
+    }
+    const training = data.trainings.find(t => t.id === trainingId);
+    if (!training) {
+      $('storeCompareResult').innerHTML = '<div class="empty">未找到培训记录</div>';
+      return;
+    }
+
+    // 如果培训记录有 beforeData/afterData，直接用
+    let beforeData = training.beforeData;
+    let afterData = training.afterData;
+
+    // 否则自动从 records 拉取
+    if (!beforeData || !afterData) {
+      const trainMonth = training.date.slice(0, 7);
+      const [y, m] = trainMonth.split('-').map(Number);
+      const prevDate = new Date(y, m - 2, 1);
+      const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+      const beforeRecs = data.records.filter(r => r.store === store && r.month === prevMonth);
+      const afterRecs = data.records.filter(r => r.store === store && r.month === trainMonth);
+      if (beforeRecs.length && afterRecs.length) {
+        beforeData = {
+          month: prevMonth,
+          perEmp: beforeRecs.map(r => ({ name: r.name, atv: r.atv, upt: r.upt, exclusive: r.exclusive, catRatios: r.catRatios || {} }))
+        };
+        afterData = {
+          month: trainMonth,
+          perEmp: afterRecs.map(r => ({ name: r.name, atv: r.atv, upt: r.upt, exclusive: r.exclusive, catRatios: r.catRatios || {} }))
+        };
+      }
+    }
+
+    if (!beforeData || !afterData) {
+      $('storeCompareResult').innerHTML = '<div class="empty"><div class="icon">⚠️</div>需要培训前后各至少 1 个月数据</div>';
+      return;
+    }
+
+    $('storeCompareResult').innerHTML = renderBATreeChart(beforeData, afterData);
+  }
+
+  function renderBATreeChart(beforeData, afterData) {
+    const fields = [['客单价', 'atv', ''], ['连带率', 'upt', ''], ['自营占比', 'exclusive', '%']];
+    const renderColumn = (d, label, cls) => {
+      const avgAtv = d.perEmp.length ? (d.perEmp.reduce((s, e) => s + (Number(e.atv) || 0), 0) / d.perEmp.length) : 0;
+      const avgUpt = d.perEmp.length ? (d.perEmp.reduce((s, e) => s + (Number(e.upt) || 0), 0) / d.perEmp.length) : 0;
+      const avgExc = d.perEmp.length ? (d.perEmp.reduce((s, e) => s + (Number(e.exclusive) || 0), 0) / d.perEmp.length) : 0;
+      return `
+        <div class="ba-tree-column ${cls}">
+          <h5>${label} ${d.month}</h5>
+          <div class="ba-row"><span>平均客单价</span><strong>${avgAtv.toFixed(0)}</strong></div>
+          <div class="ba-row"><span>平均连带率</span><strong>${avgUpt.toFixed(2)}</strong></div>
+          <div class="ba-row"><span>平均自营占比</span><strong>${avgExc.toFixed(1)}%</strong></div>
+          <div style="margin-top:8px; font-size:12px; color:var(--text-sub);">员工数：${d.perEmp.length}</div>
+        </div>
+      `;
+    };
+    return `
+      <div class="ba-tree-chart">
+        ${renderColumn(beforeData, '📅 培训前', 'before')}
+        <div class="ba-tree-arrow">→</div>
+        ${renderColumn(afterData, '📚 培训后', 'after')}
+      </div>
+    `;
+  }
+
+  /* ==============================
+     第4步：培训记录 + 培训反馈生成器
+     ============================== */
+  function filterTrainings(status, el) {
+    currentTrainingFilter = status;
+    document.querySelectorAll('#trainingFilterTabs .filter-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderTrainingList();
+  }
+
+  function renderTrainingList() {
+    let list = data.trainings.slice().reverse();
+    if (currentTrainingFilter === 'completed') list = list.filter(t => t.status === 'completed' || !t.status);
+    if (currentTrainingFilter === 'planned') list = list.filter(t => t.status === 'planned');
+
+    $('trainingList').innerHTML = list.length ? list.map(t => {
+      const cat = data.categories.find(c => c.id === t.catId);
+      const statusBadge = t.status === 'planned'
+        ? '<span class="badge planned" style="margin-left:8px;">待开展</span>'
+        : '<span class="badge done" style="margin-left:8px;">已完成</span>';
+      return `
+        <div style="border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:8px; background:#fff;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <div><strong>📚 ${t.date}${t.time ? ' ' + t.time : ''} · ${t.store}</strong><span class="badge doing" style="margin-left:8px;">${cat ? cat.name : '未分类'}</span>${statusBadge}</div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn primary small" onclick="openFeedbackGenerator('${t.id}')">📝 生成反馈</button>
+              <button class="btn danger small" onclick="delTraining('${t.id}')">删除</button>
+            </div>
+          </div>
+          <div style="font-size:13px; color:var(--text-sub);">参与：${t.emps ? t.emps.join('、') : '未指定'} · 带教${t.empCount || (t.emps ? t.emps.length : 0)}人 · ${t.duration || 0}h</div>
+          ${t.topic ? `<div style="font-size:13px; margin-top:4px;">📌 课题：${t.topic}</div>` : ''}
+          ${t.content ? `<div style="font-size:12px; color:var(--text-muted); margin-top:4px; white-space:pre-line;">📝 ${t.content}</div>` : ''}
+          ${t.feedback ? '<div style="font-size:11px; color:var(--green-deep); margin-top:4px;">✅ 已生成反馈报告</div>' : ''}
+        </div>
+      `;
+    }).join('') : '<div class="empty"><div class="icon">📚</div>还没有培训记录</div>';
+  }
+
+  function addTraining() {
+    const t = {
+      id: uid(),
+      date: $('t_date').value,
+      time: $('t_time').value,
+      duration: Number($('t_duration').value) || 0,
+      empCount: Number($('t_empCount').value) || 0,
+      topic: $('t_topic').value.trim(),
+      content: $('t_content').value.trim(),
+      store: $('t_store').value,
+      emps: $('t_emps').value.split(/[,,]/).map(s => s.trim()).filter(Boolean),
+      catId: $('t_cat').value,
+      note: $('t_topic').value.trim() || $('t_content').value.trim(),
+      observations: [],
+      causes: [],
+      suggestions: [],
+      beforeData: null,
+      afterData: null,
+      feedback: null,
+      status: $('t_status').value || 'completed',
+    };
+    if (!t.date || !t.store) { alert('请填写日期和店铺'); return; }
+    data.trainings.push(t);
+    saveData();
+    renderTrainingList();
+    closeModal('trainingModal');
+    ['t_date','t_time','t_duration','t_empCount','t_topic','t_content','t_emps'].forEach(id => { if ($(id)) $(id).value = ''; });
+  }
+
+  function delTraining(id) {
+    if (!confirm('删除该培训记录？')) return;
+    data.trainings = data.trainings.filter(t => t.id !== id);
+    saveData();
+    renderTrainingList();
+  }
+
+  /* 打开反馈生成器 */
+  function openFeedbackGenerator(trainingId) {
+    currentFeedbackTrainingId = trainingId;
+    const t = data.trainings.find(x => x.id === trainingId);
+    if (!t) return;
+
+    // 切换到培训记录页
+    switchPage('training', document.querySelector('[data-page=training]'));
+
+    $('feedbackGeneratorCard').style.display = 'block';
+    const cat = data.categories.find(c => c.id === t.catId);
+
+    // Step 1: 培训基本信息（只读）
+    let html = `
+      <div class="feedback-step">
+        <h4>① 培训基本信息</h4>
+        <div class="feedback-info-grid">
+          <div class="feedback-info-item"><label>日期时间</label><div class="val">${t.date}${t.time ? ' ' + t.time : ''}</div></div>
+          <div class="feedback-info-item"><label>门店</label><div class="val">${t.store}</div></div>
+          <div class="feedback-info-item"><label>培训内容</label><div class="val">${t.topic || t.note || (cat ? cat.name : '-')}</div></div>
+          <div class="feedback-info-item"><label>带教时长</label><div class="val">${t.duration || 0} 小时</div></div>
+          <div class="feedback-info-item"><label>带教人数</label><div class="val">${t.empCount || (t.emps ? t.emps.length : 0)} 人</div></div>
+          <div class="feedback-info-item"><label>参与员工</label><div class="val">${t.emps ? t.emps.join('、') : '-'}</div></div>
+        </div>
+      </div>
+    `;
+
+    // Step 2: 培训观察问题
+    const observations = t.observations && t.observations.length ? t.observations : [''];
+    html += `
+      <div class="feedback-step">
+        <h4>② 培训观察问题</h4>
+        <div class="feedback-edit-list" id="feedbackObservations">
+          ${observations.map((o, i) => `
+            <div class="fe-item">
+              <input type="text" class="fb-obs" value="${o.replace(/"/g, '&quot;')}" placeholder="如：韩品护肤产品知识不熟练" />
+              <button class="fe-del" onclick="delObservation(this)">✕</button>
+            </div>
+          `).join('')}
+        </div>
+        <button class="fe-add" onclick="addObservation()">＋ 添加观察问题</button>
+      </div>
+    `;
+
+    // Step 3: 培训前后业绩数据
+    html += `
+      <div class="feedback-step">
+        <h4>③ 培训前后业绩数据</h4>
+        <div style="background:#fff7ed; border:1px solid #fde68a; border-radius:10px; padding:12px; margin-bottom:10px;">
+          <div style="font-size:13px; font-weight:600; color:#92400e; margin-bottom:8px;">📋 粘贴文字快速解析</div>
+          <div style="font-size:12px; color:var(--text-sub); margin-bottom:8px;">把店长发来的业绩反馈文字粘贴到下方，系统自动提取每个员工的培训前后数据：</div>
+          <textarea id="pasteTextArea" rows="6" placeholder="示例格式：&#10;1. 曾婷婷&#10;✅客单价：95.9 → 78.9（有所下滑）&#10;✅连带率：2.5 → 2.3（小幅回落）&#10;✅独家品占比：16.7% → 16.3%，基本持平&#10;总结：独家品推荐习惯保持稳定..." style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; font-size:13px; font-family:inherit; resize:vertical; min-height:100px;"></textarea>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <button class="btn primary small" onclick="parsePastedText()">🔍 解析文字</button>
+            <button class="btn ghost small" onclick="autoFillBeforeAfterData()">🔄 从业绩库拉取</button>
+          </div>
+        </div>
+        <div id="feedbackDataInput"></div>
+      </div>
+    `;
+
+    // Step 4: 分析原因
+    const causes = t.causes && t.causes.length ? t.causes : [''];
+    html += `
+      <div class="feedback-step">
+        <h4>④ 分析原因</h4>
+        <div class="feedback-edit-list" id="feedbackCauses">
+          ${causes.map((c) => `
+            <div class="fe-item">
+              <input type="text" class="fb-cause" value="${c.replace(/"/g, '&quot;')}" placeholder="如：新品培训不足" />
+              <button class="fe-del" onclick="delCause(this)">✕</button>
+            </div>
+          `).join('')}
+        </div>
+        <button class="fe-add" onclick="addCause()">＋ 添加原因</button>
+      </div>
+    `;
+
+    // Step 5: 改善建议
+    const suggestions = t.suggestions && t.suggestions.length ? t.suggestions : [''];
+    html += `
+      <div class="feedback-step">
+        <h4>⑤ 改善建议</h4>
+        <div class="feedback-edit-list" id="feedbackSuggestions">
+          ${suggestions.map((s) => `
+            <div class="fe-item">
+              <input type="text" class="fb-sugg" value="${s.replace(/"/g, '&quot;')}" placeholder="如：每周安排一次韩品护肤知识抽查" />
+              <button class="fe-del" onclick="delSuggestion(this)">✕</button>
+            </div>
+          `).join('')}
+        </div>
+        <button class="fe-add" onclick="addSuggestion()">＋ 添加建议</button>
+      </div>
+    `;
+
+    // 生成按钮
+    html += `
+      <div style="display:flex; gap:8px; margin-top:16px;">
+        <button class="btn primary" onclick="generateTrainingFeedback()">📋 生成反馈报告</button>
+      </div>
+    `;
+
+    // 报告区域
+    html += `<div id="feedbackReportCard"></div>`;
+
+    // 如果已有反馈，直接展示
+    if (t.feedback && t.feedback.htmlText) {
+      html += `<script>setTimeout(function(){ var el = document.getElementById('feedbackReportCard'); if(el) el.innerHTML = ${JSON.stringify(t.feedback.htmlText)}; }, 0);<\/script>`;
+    }
+
+    $('feedbackGeneratorBody').innerHTML = html;
+
+    // 自动拉取数据
+    autoFillBeforeAfterData();
+  }
+
+  function closeFeedbackGenerator() {
+    $('feedbackGeneratorCard').style.display = 'none';
+    currentFeedbackTrainingId = null;
+  }
+
+  function addObservation() {
+    const container = $('feedbackObservations');
+    container.insertAdjacentHTML('beforeend', `
+      <div class="fe-item">
+        <input type="text" class="fb-obs" value="" placeholder="如：韩品护肤产品知识不熟练" />
+        <button class="fe-del" onclick="delObservation(this)">✕</button>
+      </div>
+    `);
+  }
+  function delObservation(btn) { btn.closest('.fe-item').remove(); }
+
+  function addCause() {
+    $('feedbackCauses').insertAdjacentHTML('beforeend', `
+      <div class="fe-item">
+        <input type="text" class="fb-cause" value="" placeholder="如：新品培训不足" />
+        <button class="fe-del" onclick="delCause(this)">✕</button>
+      </div>
+    `);
+  }
+  function delCause(btn) { btn.closest('.fe-item').remove(); }
+
+  function addSuggestion() {
+    $('feedbackSuggestions').insertAdjacentHTML('beforeend', `
+      <div class="fe-item">
+        <input type="text" class="fb-sugg" value="" placeholder="如：每周安排一次韩品护肤知识抽查" />
+        <button class="fe-del" onclick="delSuggestion(this)">✕</button>
+      </div>
+    `);
+  }
+  function delSuggestion(btn) { btn.closest('.fe-item').remove(); }
+
+  /**
+   * 解析粘贴的文字，提取每个员工的培训前后数据
+   * 支持格式：
+   *   1. 曾婷婷
+   *   ✅客单价：95.9 → 78.9（有所下滑）
+   *   ✅连带率：2.5 → 2.3（小幅回落）
+   *   ✅独家品占比：16.7% → 16.3%，基本持平
+   *   总结：...
+   */
+  function parsePastedText() {
+    const text = $('pasteTextArea').value.trim();
+    if (!text) { alert('请先粘贴文字'); return; }
+
+    const employees = [];
+    // 按空行或数字序号分割成块
+    // 匹配 "1. 姓名" 或 "1、姓名" 或 "姓名" 开头的块
+    const blocks = text.split(/\n(?=\d+[.、]\s*[\u4e00-\u9fa5])/);
+    
+    for (const block of blocks) {
+      if (!block.trim()) continue;
+      const emp = parseFeedbackBlock(block.trim());
+      if (emp && emp.name) employees.push(emp);
+    }
+
+    // 如果按序号分割没结果，尝试按"总结"关键词分割
+    if (employees.length === 0) {
+      const sumBlocks = text.split(/(?=总结[：:])/);
+      // 反向找：每个总结前面的内容就是一个员工块
+      let currentBlock = '';
+      for (let i = 0; i < sumBlocks.length; i++) {
+        if (i > 0) {
+          // 当前块 + 前面的总结
+          const emp = parseFeedbackBlock(currentBlock.trim());
+          if (emp && emp.name) employees.push(emp);
+        }
+        currentBlock = sumBlocks[i];
+      }
+      // 最后一个
+      if (currentBlock.trim()) {
+        const emp = parseFeedbackBlock(currentBlock.trim());
+        if (emp && emp.name) employees.push(emp);
+      }
+    }
+
+    // 如果还是没结果，整体当一块解析
+    if (employees.length === 0) {
+      const emp = parseFeedbackBlock(text);
+      if (emp && emp.name) employees.push(emp);
+    }
+
+    console.log('解析出的员工数据：', employees);
+
+    if (employees.length === 0) {
+      alert('未能从文字中提取到员工数据，请检查格式或手动填写下方表格。');
+      return;
+    }
+
+    // 渲染到数据输入区
+    renderFeedbackDataFromParsed(employees);
+    alert(`✅ 成功解析 ${employees.length} 位员工的数据，请核对！`);
+  }
+
+  /**
+   * 解析单个员工的文字块
+   */
+  function parseFeedbackBlock(block) {
+    const lines = block.split(/\n/).map(l => l.trim()).filter(l => l);
+    if (!lines.length) return null;
+
+    // 提取姓名：第一行可能是 "1. 曾婷婷" 或 "曾婷婷" 或 "1、曾婷婷"
+    let name = '';
+    const firstLine = lines[0];
+    // 去掉序号
+    const nameM = firstLine.match(/(?:\d+[.、]\s*)?([\u4e00-\u9fa5]{2,4})/);
+    if (nameM) name = nameM[1];
+
+    if (!name) return null;
+
+    let atvBefore = '', atvAfter = '';
+    let uptBefore = '', uptAfter = '';
+    let excBefore = '', excAfter = '';
+    let summary = '';
+
+    for (const line of lines) {
+      // 客单价：支持 "客单价：95.9 → 78.9" 或 "客单价：95.9->78.9" 或 "客单价95.9→78.9"
+      const atvM = line.match(/宔?单价\s*[:：]?\s*(\d+[.,]?\d*)\s*[→\->=]+\s*(\d+[.,]?\d*)/);
+      if (atvM) { atvBefore = atvM[1].replace(',', ''); atvAfter = atvM[2].replace(',', ''); continue; }
+
+      // 连带率
+      const uptM = line.match(/连[帯带单]?\s*率\s*[:：]?\s*(\d+[.,]?\d*)\s*[→\->=]+\s*(\d+[.,]?\d*)/);
+      if (uptM) { uptBefore = uptM[1].replace(',', ''); uptAfter = uptM[2].replace(',', ''); continue; }
+
+      // 独家品占比/自营占比
+      const excM = line.match(/(?:独家品?\s*占比|独家\s*占比|自营品?\s*占比|自营\s*占比)\s*[:：]?\s*(\d+[.,]?\d*)\s*%?\s*[→\->=]+\s*(\d+[.,]?\d*)\s*%?/);
+      if (excM) { excBefore = excM[1].replace(',', '').replace('%', ''); excAfter = excM[2].replace(',', '').replace('%', ''); continue; }
+
+      // 总结
+      const sumM = line.match(/总结\s*[:：]\s*(.+)/);
+      if (sumM) { summary = sumM[1].trim(); continue; }
+    }
+
+    return { name, atvBefore, atvAfter, uptBefore, uptAfter, excBefore, excAfter, summary };
+  }
+
+  /**
+   * 渲染解析出的员工数据到可编辑表格
+   */
+  function renderFeedbackDataFromParsed(employees) {
+    const html = `
+      <div style="overflow-x:auto;">
+        <table class="data" style="font-size:12px;">
+          <thead>
+            <tr>
+              <th>员工</th>
+              <th>客单价(前)</th>
+              <th>客单价(后)</th>
+              <th>连带率(前)</th>
+              <th>连带率(后)</th>
+              <th>独家占比%(前)</th>
+              <th>独家占比%(后)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${employees.map((emp, idx) => `
+              <tr>
+                <td><strong>${emp.name}</strong></td>
+                <td><input type="number" class="fb-atv-b" value="${emp.atvBefore}" step="0.1" style="width:70px; border:1px solid var(--border); border-radius:4px; padding:4px; font-size:12px;" /></td>
+                <td><input type="number" class="fb-atv-a" value="${emp.atvAfter}" step="0.1" style="width:70px; border:1px solid var(--border); border-radius:4px; padding:4px; font-size:12px;" /></td>
+                <td><input type="number" class="fb-upt-b" value="${emp.uptBefore}" step="0.01" style="width:60px; border:1px solid var(--border); border-radius:4px; padding:4px; font-size:12px;" /></td>
+                <td><input type="number" class="fb-upt-a" value="${emp.uptAfter}" step="0.01" style="width:60px; border:1px solid var(--border); border-radius:4px; padding:4px; font-size:12px;" /></td>
+                <td><input type="number" class="fb-exc-b" value="${emp.excBefore}" step="0.1" style="width:60px; border:1px solid var(--border); border-radius:4px; padding:4px; font-size:12px;" /></td>
+                <td><input type="number" class="fb-exc-a" value="${emp.excAfter}" step="0.1" style="width:60px; border:1px solid var(--border); border-radius:4px; padding:4px; font-size:12px;" /></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">💡 解析结果可直接修改，确认无误后点下方"生成反馈报告"</div>
+    `;
+    $('feedbackDataInput').innerHTML = html;
+  }
+
+  function autoFillBeforeAfterData() {
+    const t = data.trainings.find(x => x.id === currentFeedbackTrainingId);
+    if (!t) return;
+    const trainMonth = t.date.slice(0, 7);
+    const [y, m] = trainMonth.split('-').map(Number);
+    const prevDate = new Date(y, m - 2, 1);
+    const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+
+    const beforeRecs = data.records.filter(r => r.store === t.store && r.month === prevMonth);
+    const afterRecs = data.records.filter(r => r.store === t.store && r.month === trainMonth);
+
+    const renderDataInput = (recs, label, prefix) => {
+      if (!recs.length) return `<div style="font-size:13px; color:var(--text-muted); margin-bottom:10px;">${label}：暂无数据（可手动填写）</div>`;
+      return `
+        <div style="font-size:13px; color:var(--text-sub); margin-bottom:6px;">${label}（${recs[0].month}）</div>
+        <table class="data-compare-table" style="margin-bottom:12px;">
+          <thead><tr><th>员工</th><th>客单价</th><th>连带率</th><th>自营占比</th></tr></thead>
+          <tbody>
+            ${recs.map((r, i) => `
+              <tr>
+                <td><input type="text" class="${prefix}-name" value="${r.name}" style="border:none; background:transparent; font-weight:600; width:80px;" /></td>
+                <td><input type="number" class="${prefix}-atv" value="${r.atv || ''}" style="border:1px solid var(--border); border-radius:4px; padding:4px; width:70px;" /></td>
+                <td><input type="number" class="${prefix}-upt" value="${r.upt || ''}" step="0.01" style="border:1px solid var(--border); border-radius:4px; padding:4px; width:60px;" /></td>
+                <td><input type="number" class="${prefix}-exc" value="${r.exclusive || ''}" style="border:1px solid var(--border); border-radius:4px; padding:4px; width:60px;" /></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    };
+
+    $('feedbackDataInput').innerHTML = `
+      ${renderDataInput(beforeRecs, '📅 培训前数据', 'before')}
+      ${renderDataInput(afterRecs, '📚 培训后数据', 'after')}
+    `;
+  }
+
+  function generateTrainingFeedback() {
+    const t = data.trainings.find(x => x.id === currentFeedbackTrainingId);
+    if (!t) return;
+
+    // 收集观察问题
+    const observations = Array.from(document.querySelectorAll('.fb-obs')).map(i => i.value.trim()).filter(Boolean);
+    // 收集原因
+    const causes = Array.from(document.querySelectorAll('.fb-cause')).map(i => i.value.trim()).filter(Boolean);
+    // 收集建议
+    const suggestions = Array.from(document.querySelectorAll('.fb-sugg')).map(i => i.value.trim()).filter(Boolean);
+
+    // 收集前后数据 —— 兼容两种模式
+    let beforeData = [];
+    let afterData = [];
+
+    // 模式 A：粘贴解析模式（同一行有前/后两列）
+    const atvB = Array.from(document.querySelectorAll('.fb-atv-b'));
+    const atvA = Array.from(document.querySelectorAll('.fb-atv-a'));
+    if (atvB.length > 0 || atvA.length > 0) {
+      // 粘贴解析模式：每行是一个员工，有 before/after 两列
+      const rows = atvB.length >= atvA.length ? atvB : atvA;
+      rows.forEach((_, i) => {
+        const row = atvB[i]?.closest('tr');
+        if (!row) return;
+        const nameCell = row.querySelector('td:first-child strong');
+        const name = nameCell ? nameCell.textContent : '';
+        beforeData.push({
+          name,
+          atv: atvB[i]?.value || '',
+          upt: row.querySelector('.fb-upt-b')?.value || '',
+          exclusive: row.querySelector('.fb-exc-b')?.value || '',
+        });
+        afterData.push({
+          name,
+          atv: atvA[i]?.value || '',
+          upt: row.querySelector('.fb-upt-a')?.value || '',
+          exclusive: row.querySelector('.fb-exc-a')?.value || '',
+        });
+      });
+    }
+
+    // 模式 B：旧的自动拉取模式（before/after 分两组）
+    if (beforeData.length === 0) {
+      const beforeNames = Array.from(document.querySelectorAll('.before-name')).map(i => i.value.trim());
+      const beforeAtvs = Array.from(document.querySelectorAll('.before-atv')).map(i => i.value);
+      const beforeUpts = Array.from(document.querySelectorAll('.before-upt')).map(i => i.value);
+      const beforeExcs = Array.from(document.querySelectorAll('.before-exc')).map(i => i.value);
+      const afterNames = Array.from(document.querySelectorAll('.after-name')).map(i => i.value.trim());
+      const afterAtvs = Array.from(document.querySelectorAll('.after-atv')).map(i => i.value);
+      const afterUpts = Array.from(document.querySelectorAll('.after-upt')).map(i => i.value);
+      const afterExcs = Array.from(document.querySelectorAll('.after-exc')).map(i => i.value);
+      beforeData = beforeNames.map((name, i) => ({ name, atv: beforeAtvs[i], upt: beforeUpts[i], exclusive: beforeExcs[i] }));
+      afterData = afterNames.map((name, i) => ({ name, atv: afterAtvs[i], upt: afterUpts[i], exclusive: afterExcs[i] }));
+    }
+
+    if (afterData.length === 0) {
+      alert('请先粘贴文字解析或自动拉取数据');
+      return;
+    }
+
+    // 计算各指标变化方向
+    const progressList = [];
+    const gapList = [];
+    afterData.forEach(after => {
+      const before = beforeData.find(b => b.name === after.name);
+      if (!before) return;
+      const atvDiff = (Number(after.atv) || 0) - (Number(before.atv) || 0);
+      const uptDiff = (Number(after.upt) || 0) - (Number(before.upt) || 0);
+      const excDiff = (Number(after.exclusive) || 0) - (Number(before.exclusive) || 0);
+      const totalDiff = atvDiff / 100 + uptDiff + excDiff / 10;
+      if (totalDiff > 0) {
+        progressList.push({ name: after.name, atvDiff, uptDiff, excDiff });
+      } else if (totalDiff < 0) {
+        gapList.push({ name: after.name, atvDiff, uptDiff, excDiff });
+      }
+    });
+
+    const cat = data.categories.find(c => c.id === t.catId);
+    const reportData = {
+      training: t,
+      cat,
+      observations,
+      beforeData,
+      afterData,
+      causes,
+      suggestions,
+      progressList,
+      gapList,
+    };
+
+    const htmlText = buildFeedbackHtml(reportData);
+    const plainText = buildFeedbackPlainText(reportData);
+
+    $('feedbackReportCard').innerHTML = htmlText + `
+      <div style="display:flex; gap:8px; margin-top:14px;">
+        <button class="btn primary" onclick="copyFeedbackText()">📋 复制纯文本</button>
+        <button class="btn primary" onclick="saveFeedbackToTraining()">💾 保存到培训记录</button>
+      </div>
+    `;
+
+    // 暂存纯文本用于复制
+    $('feedbackReportCard').dataset.plainText = plainText;
+  }
+
+  function buildFeedbackHtml(d) {
+    const t = d.training;
+    const fields = [['客单价', 'atv', ''], ['连带率', 'upt', ''], ['自营占比', 'exclusive', '%']];
+
+    // 数据对比表格
+    let compareRows = '';
+    d.afterData.forEach(after => {
+      const before = d.beforeData.find(b => b.name === after.name);
+      if (!before) return;
+      fields.forEach(([label, key, unit]) => {
+        const bv = Number(before[key]) || 0;
+        const av = Number(after[key]) || 0;
+        const diff = av - bv;
+        const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+        const sign = diff > 0 ? '+' : '';
+        compareRows += `<tr>
+          <td>${after.name}</td>
+          <td>${bv}${unit}</td>
+          <td>${av}${unit}</td>
+          <td class="${cls}">${sign}${diff.toFixed(unit==='%'?1:0)}${unit}</td>
+        </tr>`;
+      });
+    });
+
+    return `
+      <div class="feedback-report-card">
+        <div class="frc-title">📋 培训反馈报告</div>
+        <div class="frc-info">
+          <div><label>日期时间</label><span>${t.date}${t.time ? ' ' + t.time : ''}</span></div>
+          <div><label>门店</label><span>${t.store}</span></div>
+          <div><label>培训内容</label><span>${t.topic || t.note || (d.cat ? d.cat.name : '-')}</span></div>
+          <div><label>带教时长</label><span>${t.duration || 0} 小时</span></div>
+          <div><label>带教人数</label><span>${t.empCount || (t.emps ? t.emps.length : 0)} 人</span></div>
+          <div><label>参与员工</label><span>${t.emps ? t.emps.join('、') : '-'}</span></div>
+        </div>
+
+        <div class="frc-section">
+          <h5>🔍 门店现存问题</h5>
+          <ul class="frc-list">
+            ${d.observations.length ? d.observations.map(o => `<li>${o}</li>`).join('') : '<li>暂无</li>'}
+          </ul>
+        </div>
+
+        <div class="frc-section">
+          <h5>📊 数据变化对比</h5>
+          <table class="data-compare-table">
+            <thead><tr><th>员工</th><th>指标</th><th>培训前</th><th>培训后</th><th>变化</th></tr></thead>
+            <tbody>
+              ${d.afterData.map(after => {
+                const before = d.beforeData.find(b => b.name === after.name);
+                if (!before) return '';
+                return fields.map(([label, key, unit]) => {
+                  const bv = Number(before[key]) || 0;
+                  const av = Number(after[key]) || 0;
+                  const diff = av - bv;
+                  const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+                  const sign = diff > 0 ? '+' : '';
+                  return `<tr>
+                    <td>${after.name}</td>
+                    <td>${label}</td>
+                    <td>${bv}${unit}</td>
+                    <td>${av}${unit}</td>
+                    <td class="${cls}">${sign}${diff.toFixed(unit==='%'?1:0)}${unit}</td>
+                  </tr>`;
+                }).join('');
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        ${d.progressList.length ? `
+          <div class="frc-section">
+            <h5>📈 进步人员</h5>
+            <div class="frc-progress">
+              ${d.progressList.map(p => `${p.name}（客单价${p.atvDiff>0?'+':''}${p.atvDiff.toFixed(0)} / 连带率${p.uptDiff>0?'+':''}${p.uptDiff.toFixed(2)} / 自营占比${p.excDiff>0?'+':''}${p.excDiff.toFixed(1)}%）`).join('、')}
+            </div>
+          </div>
+        ` : ''}
+
+        ${d.gapList.length ? `
+          <div class="frc-section">
+            <h5>⚠️ 缺口人员</h5>
+            <div class="frc-gap">
+              ${d.gapList.map(p => `${p.name}（客单价${p.atvDiff} / 连带率${p.uptDiff.toFixed(2)} / 自营占比${p.excDiff.toFixed(1)}%）`).join('、')}
+            </div>
+          </div>
+        ` : ''}
+
+        <div class="frc-section">
+          <h5>💡 分析原因</h5>
+          <ul class="frc-list">
+            ${d.causes.length ? d.causes.map(c => `<li>${c}</li>`).join('') : '<li>暂无</li>'}
+          </ul>
+        </div>
+
+        <div class="frc-section">
+          <h5>📝 后续带教改善建议</h5>
+          <ul class="frc-list">
+            ${d.suggestions.length ? d.suggestions.map(s => `<li>${s}</li>`).join('') : '<li>暂无</li>'}
+          </ul>
+        </div>
+      </div>
+    `;
+  }
+
+  function buildFeedbackPlainText(d) {
+    const t = d.training;
+    const cat = d.cat;
+    let text = '';
+    text += '📋 培训反馈报告\n';
+    text += '━━━━━━━━━━━━━━━━\n';
+    text += `日期时间：${t.date}${t.time ? ' ' + t.time : ''}\n`;
+    text += `门店：${t.store}\n`;
+    text += `培训内容：${t.topic || t.note || (cat ? cat.name : '-')}\n`;
+    text += `带教时长：${t.duration || 0}小时\n`;
+    text += `带教人数：${t.empCount || (t.emps ? t.emps.length : 0)}人\n`;
+    text += `参与员工：${t.emps ? t.emps.join('、') : '-'}\n`;
+    text += '\n';
+    text += '🔍 门店现存问题：\n';
+    if (d.observations.length) d.observations.forEach((o, i) => { text += `${i+1}. ${o}\n`; });
+    else text += '暂无\n';
+    text += '\n';
+    text += '📊 数据变化对比：\n';
+    d.afterData.forEach(after => {
+      const before = d.beforeData.find(b => b.name === after.name);
+      if (!before) return;
+      const atvDiff = (Number(after.atv)||0) - (Number(before.atv)||0);
+      const uptDiff = (Number(after.upt)||0) - (Number(before.upt)||0);
+      const excDiff = (Number(after.exclusive)||0) - (Number(before.exclusive)||0);
+      text += `${after.name}: 客单价 ${before.atv||0}→${after.atv||0}(${atvDiff>0?'+':''}${atvDiff}) / 连带率 ${before.upt||0}→${after.upt||0}(${uptDiff>0?'+':''}${uptDiff.toFixed(2)}) / 自营占比 ${before.exclusive||0}%→${after.exclusive||0}%(${excDiff>0?'+':''}${excDiff.toFixed(1)}%)\n`;
+    });
+    text += '\n';
+    if (d.progressList.length) {
+      text += '📈 进步人员：\n';
+      d.progressList.forEach(p => { text += `· ${p.name}\n`; });
+      text += '\n';
+    }
+    if (d.gapList.length) {
+      text += '⚠️ 缺口人员：\n';
+      d.gapList.forEach(p => { text += `· ${p.name}\n`; });
+      text += '\n';
+    }
+    text += '💡 分析原因：\n';
+    if (d.causes.length) d.causes.forEach((c, i) => { text += `${i+1}. ${c}\n`; });
+    else text += '暂无\n';
+    text += '\n';
+    text += '📝 后续带教改善建议：\n';
+    if (d.suggestions.length) d.suggestions.forEach((s, i) => { text += `${i+1}. ${s}\n`; });
+    else text += '暂无\n';
+    return text;
+  }
+
+  function copyFeedbackText() {
+    const text = $('feedbackReportCard').dataset.plainText || '';
+    if (!text) { alert('请先生成反馈报告'); return; }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => alert('✅ 已复制到剪贴板'));
+    } else {
+      // 兼容方案
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      alert('✅ 已复制到剪贴板');
+    }
+  }
+
+  function saveFeedbackToTraining() {
+    const t = data.trainings.find(x => x.id === currentFeedbackTrainingId);
+    if (!t) return;
+    const text = $('feedbackReportCard').dataset.plainText || '';
+    const html = $('feedbackReportCard').querySelector('.feedback-report-card') ?
+      $('feedbackReportCard').querySelector('.feedback-report-card').outerHTML : '';
+    t.feedback = { htmlText: html, plainText: text };
+    // 同时保存观察问题、原因、建议
+    t.observations = Array.from(document.querySelectorAll('.fb-obs')).map(i => i.value.trim()).filter(Boolean);
+    t.causes = Array.from(document.querySelectorAll('.fb-cause')).map(i => i.value.trim()).filter(Boolean);
+    t.suggestions = Array.from(document.querySelectorAll('.fb-sugg')).map(i => i.value.trim()).filter(Boolean);
+    // 保存前后数据
+    const beforeNames = Array.from(document.querySelectorAll('.before-name')).map(i => i.value.trim());
+    const beforeAtvs = Array.from(document.querySelectorAll('.before-atv')).map(i => i.value);
+    const beforeUpts = Array.from(document.querySelectorAll('.before-upt')).map(i => i.value);
+    const beforeExcs = Array.from(document.querySelectorAll('.before-exc')).map(i => i.value);
+    const afterNames = Array.from(document.querySelectorAll('.after-name')).map(i => i.value.trim());
+    const afterAtvs = Array.from(document.querySelectorAll('.after-atv')).map(i => i.value);
+    const afterUpts = Array.from(document.querySelectorAll('.after-upt')).map(i => i.value);
+    const afterExcs = Array.from(document.querySelectorAll('.after-exc')).map(i => i.value);
+    if (beforeNames.length) {
+      const [y, m] = t.date.slice(0, 7).split('-').map(Number);
+      const prevDate = new Date(y, m - 2, 1);
+      const prevMonth = `${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+      t.beforeData = { month: prevMonth, perEmp: beforeNames.map((name, i) => ({ name, atv: beforeAtvs[i], upt: beforeUpts[i], exclusive: beforeExcs[i], catRatios: {} })) };
+    }
+    if (afterNames.length) {
+      t.afterData = { month: t.date.slice(0, 7), perEmp: afterNames.map((name, i) => ({ name, atv: afterAtvs[i], upt: afterUpts[i], exclusive: afterExcs[i], catRatios: {} })) };
+    }
+    saveData();
+    alert('✅ 反馈已保存到培训记录');
+    renderTrainingList();
+  }
+
+  /* ==============================
+     分析报告
+     ============================== */
+  function renderAnalysis() {
+    const totalRec = data.records.length;
+    const totalTrain = data.trainings.length;
+    const empCount = new Set(data.records.map(r => r.name + '|' + r.store)).size;
+    const curMonth = getMonthsList()[0];
+    const completedTrain = data.trainings.filter(t => t.status === 'completed' || !t.status).length;
+    const plannedTrain = data.trainings.filter(t => t.status === 'planned').length;
+    const feedbackCount = data.trainings.filter(t => t.feedback).length;
+
+    $('analysisContent').innerHTML = `
+      <div class="kpi-grid">
+        <div class="kpi"><div class="label">业绩记录</div><div class="value">${totalRec}</div><div class="delta">条</div></div>
+        <div class="kpi"><div class="label">培训记录</div><div class="value">${totalTrain}</div><div class="delta">场次</div></div>
+        <div class="kpi"><div class="label">覆盖员工</div><div class="value">${empCount}</div><div class="delta">人</div></div>
+      </div>
+      <div class="kpi-grid" style="margin-top:10px;">
+        <div class="kpi"><div class="label">已完成培训</div><div class="value">${completedTrain}</div><div class="delta up">场</div></div>
+        <div class="kpi"><div class="label">待开展培训</div><div class="value">${plannedTrain}</div><div class="delta" style="color:var(--orange);">场</div></div>
+        <div class="kpi"><div class="label">已生成反馈</div><div class="value">${feedbackCount}</div><div class="delta up">份</div></div>
+      </div>
+
+      <div class="section-title">📊 ${curMonth} 排行</div>
+      ${data.records.filter(r=>r.month===curMonth).length ? renderTopList(curMonth) : '<div class="empty">暂无数据</div>'}
+
+      <div class="section-title">📝 培训反馈统计</div>
+      ${renderFeedbackStats()}
+
+      <div style="margin-top:16px; display:flex; gap:8px;">
+        <button class="btn primary" onclick="exportRecords()">📤 导出全部数据</button>
+        <button class="btn danger" onclick="if(confirm('⚠️ 清空所有数据？')){localStorage.removeItem('${STORE_KEY}'); location.reload();}">🗑️ 清空</button>
+      </div>
+    `;
+  }
+
+  function renderFeedbackStats() {
+    const trainingsWithFeedback = data.trainings.filter(t => t.feedback);
+    if (!trainingsWithFeedback.length) {
+      return '<div class="empty">暂无已生成的培训反馈</div>';
+    }
+    return `
+      <table class="data">
+        <thead><tr><th>日期</th><th>门店</th><th>培训内容</th><th>参与人数</th><th>操作</th></tr></thead>
+        <tbody>${trainingsWithFeedback.map(t => `
+          <tr>
+            <td>${t.date}</td>
+            <td><span class="store-tag">${t.store}</span></td>
+            <td>${t.topic || t.note || '-'}</td>
+            <td>${t.emps ? t.emps.length : 0}</td>
+            <td><button class="btn ghost small" onclick="switchPage('training', document.querySelector('[data-page=training]')); setTimeout(function(){openFeedbackGenerator('${t.id}')}, 100)">查看</button></td>
+          </tr>
+        `).join('')}</tbody>
+      </table>
+    `;
+  }
+
+  function renderTopList(month) {
+    const sorted = data.records.filter(r => r.month === month && r.atv).sort((a,b) => (Number(b.atv)||0) - (Number(a.atv)||0)).slice(0, 10);
+    return `<table class="data">
+      <thead><tr><th>排名</th><th>员工</th><th>店铺</th><th>客单价</th><th>连带率</th><th>独家占比</th></tr></thead>
+      <tbody>${sorted.map((r,i) => `
+        <tr>
+          <td><strong>${i+1}</strong></td><td>${r.name}</td><td><span class="store-tag">${r.store}</span></td>
+          <td>${r.atv || '-'}</td><td>${r.upt || '-'}</td><td>${r.exclusive ? r.exclusive + '%' : '-'}</td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  }
+
+  /* ==============================
+     初始化
+     ============================== */
+  /* ==============================
+     日期格式化 + 每周激励语
+     ============================== */
+  function formatDateWithQuarter() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const quarter = Math.floor(d.getMonth() / 3) + 1;
+    return `${y}年${m}月${day}日 · 第${quarter}季度`;
+  }
+
+  const WEEKLY_QUOTES = [
+    { zh: '做难事必有所得', en: 'Do hard things, get hard results.' },
+    { zh: '不卷不躺，持续上场', en: "Don't overthink it, just keep showing up." },
+    { zh: '今天的松弛感，来自昨天的硬核输出', en: "Today's chill comes from yesterday's hardcore grind." },
+    { zh: '允许一切发生，然后搞定它', en: 'Let it happen, then handle it like a pro.' },
+    { zh: '先把事做到 80 分，再聊完美', en: 'Get it to 80% first, perfection can wait.' },
+    { zh: '别emo了，去交付', en: 'Stop overthinking, go deliver.' },
+    { zh: '行动是治愈内耗的唯一解药', en: 'Action is the only cure for overthinking.' },
+    { zh: '把热爱做到极致，就是不可替代', en: 'Take your passion to the limit, become irreplaceable.' },
+    { zh: '每天进步 1%，一年翻 37 倍', en: '1% better every day, 37x better in a year.' },
+    { zh: '不是有了希望才坚持，是坚持了才有希望', en: "You don't start because you have hope; you have hope because you started." },
+    { zh: '与其焦虑，不如行动', en: 'Less anxiety, more action.' },
+    { zh: '搞钱不如搞成长，成长了钱自然来', en: 'Focus on growth, not just on money — money follows growth.' },
+    { zh: '把简单的事做到极致，就是绝招', en: "Doing the simple things to the extreme is the ultimate move." },
+    { zh: '今天的你，要比昨天的你更狠一点', en: "Today's you should be a little more ruthless than yesterday's." },
+    { zh: '与其内耗，不如开干', en: 'Stop overthinking. Start doing.' },
+    { zh: '靠谱，是对一个人最高的评价', en: 'Being reliable is the highest compliment.' },
+    { zh: '慢一点没关系，在走就好', en: "It's okay to be slow, as long as you keep moving." },
+    { zh: '把每一次培训都当成作品来打磨', en: 'Treat every training session as a work of art to be polished.' },
+    { zh: '数据不会骗人，但行动能改变数据', en: "Data doesn't lie, but action can change it." },
+    { zh: '今天流的汗，是明天的底气', en: "Today's sweat is tomorrow's confidence." },
+    { zh: '与其羡慕，不如成为', en: 'Stop admiring. Start becoming.' },
+    { zh: '保持饥饿，保持热爱', en: 'Stay hungry, stay passionate.' },
+    { zh: '把委屈调成静音，把专注开到最大', en: "Mute the complaints, max out the focus." },
+    { zh: '不是所有努力都会被看见，但所有努力都会算数', en: "Not all effort gets noticed, but all effort counts." },
+    { zh: '做自己的天花板，也别忘了往上顶', en: "Be your own ceiling, and keep pushing through it." },
+    { zh: '与其等待机会，不如创造机会', en: "Don't wait for opportunities. Create them." },
+    { zh: '把热爱装进口袋，把行动穿在身上', en: 'Put passion in your pocket, wear action on your sleeve.' },
+    { zh: '别问能不能行，先干了再说', en: "Don't ask if it works. Just do it and find out." },
+    { zh: '你只管努力，剩下的交给时间', en: 'You focus on the effort, let time handle the rest.' },
+    { zh: '今天的培训，是明天的业绩', en: "Today's training is tomorrow's performance." },
+    { zh: '把不可能变成"试了才知道"', en: "Turn 'impossible' into 'you never know until you try.'" },
+    { zh: '与其纠结，不如开卷', en: 'Stop hesitating, start studying.' },
+    { zh: '把焦虑换成行动，把等待换成出发', en: 'Trade anxiety for action, waiting for departure.' },
+    { zh: '你的能量，超乎你想像', en: 'Your energy is beyond your imagination.' },
+    { zh: '不和别人比，只和昨天的自己比', en: "Don't compare with others. Compare with yesterday's you." },
+    { zh: '把每一天都活成限量版', en: 'Live every day like a limited edition.' },
+    { zh: '种一棵树最好的时间是十年前，其次是现在', en: 'The best time to plant a tree was 10 years ago. The second best time is now.' },
+    { zh: '与其抱怨，不如改变', en: "Don't complain. Change it." },
+    { zh: '把热爱做到极致，就成了不可替代', en: 'When you push passion to the extreme, you become irreplaceable.' },
+    { zh: '你不需要很厉害才能开始，但你需要开始才能很厉害', en: "You don't have to be great to start, but you have to start to be great." },
+    { zh: '生活不会亏待每一个认真的人', en: 'Life never shortchanges anyone who takes it seriously.' },
+    { zh: '把目标拆成小任务，把小任务变成大成就', en: 'Break goals into small tasks, turn small tasks into big achievements.' },
+    { zh: '与其羡慕别人的光，不如点亮自己的灯', en: "Instead of envying others' light, light your own lamp." },
+    { zh: '时间不会等你，但它会奖励奔跑的人', en: "Time won't wait for you, but it rewards those who run." },
+    { zh: '成长就是不断打破昨天的自己', en: "Growth is constantly breaking yesterday's version of you." },
+    { zh: '把"我不行"改成"我试试"', en: "Change \"I can't\" to \"Let me try.\"" },
+    { zh: '与其想太多，不如做一点', en: 'Instead of overthinking, just do a little.' },
+    { zh: '今天的沉淀，是明天的爆发', en: "Today's accumulation is tomorrow's breakthrough." },
+    { zh: '别等准备好了再开始，边做边准备', en: "Don't wait until you're ready. Start and prepare along the way." },
+    { zh: '把每一次挑战都当成升级打怪', en: 'Treat every challenge like leveling up in a game.' },
+    { zh: '专注当下，未来自来', en: 'Focus on the present, the future will come to you.' },
+    { zh: '与其焦虑未来，不如深耕当下', en: "Instead of worrying about the future, double down on the present." },
+    { zh: '你做过的每件事，都会在未来的某天连成线', en: "Everything you've done will connect the dots one day." },
+  ];
+
+  function getWeekOfYear(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + 3 - (d.getDay() + 6) % 7);
+    const week1 = new Date(d.getFullYear(), 0, 4);
+    return 1 + Math.round(((d - week1) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
+  }
+
+  function updateDailyQuote() {
+    const now = new Date();
+    const weekNum = getWeekOfYear(now);
+    const idx = (weekNum - 1) % WEEKLY_QUOTES.length;
+    const quote = WEEKLY_QUOTES[idx];
+    const tag = $('dailyQuote');
+    if (tag) {
+      tag.innerHTML = `<div>${quote.zh}</div><div class="small">${quote.en}</div>`;
+    }
+  }
+
+  function init() {
+    refreshCatParentSelect();
+    refreshStoreSelects();
+    // 显示日期+季度
+    $('periodText').textContent = formatDateWithQuarter();
+    // 每周激励语
+    updateDailyQuote();
+    // 默认选中分析报告页
+    switchPage('analysis', document.querySelector('[data-page=analysis]'));
+    const uz = $('uploadZone');
+    if (uz) {
+      uz.addEventListener('dragover', e => { e.preventDefault(); uz.classList.add('dragover'); });
+      uz.addEventListener('dragleave', () => uz.classList.remove('dragover'));
+      uz.addEventListener('drop', e => {
+        e.preventDefault();
+        uz.classList.remove('dragover');
+        const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+        if (files.length) {
+          const dt = new DataTransfer();
+          files.forEach(f => dt.items.add(f));
+          $('imgUpload').files = dt.files;
+          handleImages({ target: { files } });
+        }
+      });
+    }
+  }
+  init();
+</script>
+
+</body>
+</html>
