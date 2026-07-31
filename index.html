@@ -1084,7 +1084,7 @@
      数据结构 v6
      ============================== */
   const STORE_KEY = 'trainer_workbench_v7';
-  const OLD_STORE_KEY = 'trainer_workbench_v6';
+  const OLD_STORE_KEYS = ['trainer_workbench_v6', 'trainer_workbench_v5', 'trainer_workbench_v4', 'trainer_workbench_v3'];
   let currentMetric = 'atv';  // 当前柱状图对比的指标
   let currentTrainingFilter = 'all';  // 培训记录筛选
   let currentCompareMode = 'emp';  // 对比模式
@@ -1250,30 +1250,53 @@
 
   function loadData() {
     try {
+      // 1. 先尝试当前版本的 key
       const raw = localStorage.getItem(STORE_KEY);
       if (raw) {
         const d = JSON.parse(raw);
         return ensureCompleteData(d);
       }
-      // 尝试从旧版本迁移
-      const oldRaw = localStorage.getItem(OLD_STORE_KEY);
-      if (oldRaw) {
+      // 1.5 尝试从备份 key 恢复
+      const backupRaw = localStorage.getItem(STORE_KEY + '_backup');
+      if (backupRaw) {
         try {
-          const oldData = JSON.parse(oldRaw);
-          if (oldData.records) {
-            const migrated = migrateData(oldData);
-            return ensureCompleteData(migrated);
+          const d = JSON.parse(backupRaw);
+          if (d && d.records) {
+            console.log('从备份恢复数据');
+            return ensureCompleteData(d);
           }
-        } catch (e) {}
+        } catch(e) {}
       }
-    } catch (e) {}
+      // 2. 尝试从所有旧版本 key 加载
+      for (const oldKey of OLD_STORE_KEYS) {
+        const oldRaw = localStorage.getItem(oldKey);
+        if (oldRaw) {
+          try {
+            const oldData = JSON.parse(oldRaw);
+            if (oldData && oldData.records) {
+              const migrated = migrateData(oldData);
+              const completed = ensureCompleteData(migrated);
+              // 立即保存到新 key，下次就不用再迁移
+              localStorage.setItem(STORE_KEY, JSON.stringify(completed));
+              console.log('已从旧版本(' + oldKey + ')迁移数据');
+              return completed;
+            }
+          } catch (e) { console.warn('迁移失败(' + oldKey + '):', e); }
+        }
+      }
+    } catch (e) { console.warn('loadData error:', e); }
     return defaultData();
   }
 
   let data = loadData();
 
   function saveData() {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+    try {
+      const json = JSON.stringify(data);
+      localStorage.setItem(STORE_KEY, json);
+      // 同时写一份备份，防止数据丢失
+      localStorage.setItem(STORE_KEY + '_backup', json);
+    }
     catch (e) { alert('⚠️ 保存失败，建议先导出 JSON 备份'); }
   }
 
@@ -2022,6 +2045,36 @@
     };
     r.readAsText(f);
   }
+
+  /* 完整数据导入恢复（替换模式，非合并） */
+  function importFullData(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = function() {
+      try {
+        const obj = JSON.parse(reader.result);
+        if (!obj.records) { alert('❌ 文件格式不正确，缺少 records 数据'); return; }
+        if (!confirm(`⚠️ 即将用导入的数据替换当前所有数据！\n\n导入内容：\n• ${obj.records.length} 条业绩记录\n• ${obj.trainings ? obj.trainings.length : 0} 条培训记录\n• ${obj.staffProfiles ? obj.staffProfiles.length : 0} 个员工档案\n\n确定继续？`)) return;
+        data = ensureCompleteData(obj);
+        saveData();
+        alert('✅ 数据已恢复！页面将刷新...');
+        location.reload();
+      } catch (err) { alert('❌ 导入失败：' + err.message); }
+    };
+    reader.readAsText(f);
+    e.target.value = ''; // 重置 input，方便下次选同一个文件
+  }
+
+  /* 清空所有数据 */
+  function clearAllData() {
+    if (!confirm('⚠️ 确认清空所有数据？\n\n此操作不可撤销！\n建议先点击「导出备份」保存数据。')) return;
+    if (!confirm('再次确认：真的要清空全部数据吗？')) return;
+    localStorage.removeItem(STORE_KEY);
+    localStorage.removeItem(STORE_KEY + '_backup');
+    location.reload();
+  }
+
   function mergeCategories(e, i) {
     i.forEach(c => { if (!e.find(x => x.id === c.id)) e.push(c); });
     return e;
@@ -3342,9 +3395,15 @@
       <div class="section-title">📝 培训反馈统计</div>
       ${renderFeedbackStats()}
 
-      <div style="margin-top:16px; display:flex; gap:8px;">
-        <button class="btn primary" onclick="exportRecords()">📤 导出全部数据</button>
-        <button class="btn danger" onclick="if(confirm('⚠️ 清空所有数据？')){localStorage.removeItem('${STORE_KEY}'); location.reload();}">🗑️ 清空</button>
+      <div class="section-title">💾 数据备份与恢复</div>
+      <div style="background:#fff7ed; border:1px solid #fde68a; border-radius:10px; padding:12px; margin-bottom:10px; font-size:12px; color:#92400e;">
+        ⚠️ 重要：你的数据保存在浏览器本地（localStorage）。清除浏览器缓存、更新版本后数据可能丢失。请定期点击「导出备份」保存数据文件，更新后用「导入恢复」找回。
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="btn primary" onclick="exportRecords()">📤 导出备份</button>
+        <button class="btn ghost" onclick="document.getElementById('fullJsonImport').click()">📥 导入恢复</button>
+        <input type="file" id="fullJsonImport" accept=".json" style="display:none" onchange="importFullData(event)" />
+        <button class="btn danger" onclick="clearAllData()">🗑️ 清空所有数据</button>
       </div>
     `;
   }
