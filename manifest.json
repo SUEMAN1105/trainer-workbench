@@ -1,0 +1,18 @@
+{
+  "name": "闪闪✨培训师工作台",
+  "short_name": "培训师工作台",
+  "description": "培训前后对比、业绩追踪、一键生成培训反馈",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5f7fb",
+  "theme_color": "#2d6cdf",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='28' fill='%232d6cdf'/%3E%3Ctext x='60' y='78' font-size='60' text-anchor='middle' fill='white'%3E📚%3C/text%3E%3C/svg%3E",
+      "sizes": "120x120",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
