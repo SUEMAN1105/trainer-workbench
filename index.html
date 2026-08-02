@@ -1081,15 +1081,233 @@
 
 <script>
   /* ==============================
-     数据结构 v6
+     数据结构 v7（版本锁定，不再升级）
      ============================== */
   const STORE_KEY = 'trainer_workbench_v7';
   const OLD_STORE_KEYS = ['trainer_workbench_v6', 'trainer_workbench_v5', 'trainer_workbench_v4', 'trainer_workbench_v3'];
+  const DB_NAME = 'trainer_workbench_db';
+  const DB_STORE = 'appdata';
+  const DB_VERSION = 1;
   let currentMetric = 'atv';  // 当前柱状图对比的指标
   let currentTrainingFilter = 'all';  // 培训记录筛选
   let currentCompareMode = 'emp';  // 对比模式
   let selectedStaffKey = null;  // 当前选中的员工
   let currentFeedbackTrainingId = null;  // 当前反馈生成器的培训ID
+
+  /* ==============================
+     存储引擎（StorageEngine）
+     三级降级策略：IndexedDB → localStorage → 内存
+     ============================== */
+  const StorageEngine = {
+    _idb: null,         // IndexedDB 实例
+    _idbReady: false,   // IndexedDB 初始化完成
+    _idbFailed: false,  // IndexedDB 不可用
+    _mem: {},           // 内存存储（最终 fallback）
+    _lsChecked: null,   // localStorage 可用性
+
+    // 检测 localStorage
+    _checkLS() {
+      if (this._lsChecked !== null) return this._lsChecked;
+      try {
+        const k = '__t_' + Date.now();
+        localStorage.setItem(k, 'x');
+        localStorage.removeItem(k);
+        this._lsChecked = true;
+      } catch(e) { this._lsChecked = false; }
+      return this._lsChecked;
+    },
+
+    // 初始化 IndexedDB（异步）
+    async initIDB() {
+      if (this._idbReady || this._idbFailed) return;
+      try {
+        if (!window.indexedDB) { this._idbFailed = true; return; }
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(DB_STORE)) {
+            db.createObjectStore(DB_STORE, { keyPath: 'key' });
+          }
+        };
+        this._idb = await new Promise((resolve, reject) => {
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+        this._idbReady = true;
+        console.log('✅ IndexedDB 初始化成功');
+      } catch(e) {
+        console.warn('⚠️ IndexedDB 不可用:', e.message);
+        this._idbFailed = true;
+      }
+    },
+
+    // IndexedDB 读取
+    async _idbGet(key) {
+      if (!this._idbReady) return null;
+      try {
+        const tx = this._idb.transaction(DB_STORE, 'readonly');
+        const store = tx.objectStore(DB_STORE);
+        return await new Promise((resolve, reject) => {
+          const r = store.get(key);
+          r.onsuccess = () => resolve(r.result ? r.result.value : null);
+          r.onerror = () => reject(r.error);
+        });
+      } catch(e) { return null; }
+    },
+
+    // IndexedDB 写入
+    async _idbSet(key, value) {
+      if (!this._idbReady) return false;
+      try {
+        const tx = this._idb.transaction(DB_STORE, 'readwrite');
+        const store = tx.objectStore(DB_STORE);
+        await new Promise((resolve, reject) => {
+          const r = store.put({ key, value });
+          r.onsuccess = () => resolve();
+          r.onerror = () => reject(r.error);
+        });
+        return true;
+      } catch(e) { return false; }
+    },
+
+    // IndexedDB 删除
+    async _idbRemove(key) {
+      if (!this._idbReady) return;
+      try {
+        const tx = this._idb.transaction(DB_STORE, 'readwrite');
+        tx.objectStore(DB_STORE).delete(key);
+      } catch(e) {}
+    },
+
+    // 同步读（优先内存 → localStorage）
+    getSync(key) {
+      if (this._mem[key] !== undefined) return this._mem[key];
+      if (this._checkLS()) {
+        try { const v = localStorage.getItem(key); return v; } catch(e) {}
+      }
+      return null;
+    },
+
+    // 同步写（同时写内存和 localStorage）
+    setSync(key, value) {
+      this._mem[key] = value;
+      if (this._checkLS()) {
+        try { localStorage.setItem(key, value); return true; }
+        catch(e) {}
+      }
+      return false;
+    },
+
+    // 同步删除
+    removeSync(key) {
+      delete this._mem[key];
+      if (this._checkLS()) {
+        try { localStorage.removeItem(key); } catch(e) {}
+      }
+    },
+
+    // 异步读（IndexedDB → localStorage → 内存）
+    async get(key) {
+      // 1. 先查内存
+      if (this._mem[key] !== undefined) return this._mem[key];
+      // 2. 查 IndexedDB
+      if (this._idbReady) {
+        const v = await this._idbGet(key);
+        if (v !== null) { this._mem[key] = v; return v; }
+      }
+      // 3. 查 localStorage
+      if (this._checkLS()) {
+        try { const v = localStorage.getItem(key); if (v !== null) return v; } catch(e) {}
+      }
+      return null;
+    },
+
+    // 异步写（IndexedDB + localStorage + 内存）
+    async set(key, value) {
+      // 1. 写内存
+      this._mem[key] = value;
+      // 2. 写 IndexedDB
+      if (this._idbReady) {
+        await this._idbSet(key, value);
+      }
+      // 3. 写 localStorage（作为备份，失败不影响）
+      if (this._checkLS()) {
+        try { localStorage.setItem(key, value); } catch(e) {}
+      }
+    },
+
+    // 异步删除
+    async remove(key) {
+      delete this._mem[key];
+      if (this._idbReady) await this._idbRemove(key);
+      if (this._checkLS()) {
+        try { localStorage.removeItem(key); } catch(e) {}
+      }
+    },
+
+    // 获取当前存储模式
+    getMode() {
+      if (this._idbReady) return 'IndexedDB';
+      if (this._checkLS()) return 'localStorage';
+      return 'memory';
+    },
+
+    isPersistent() {
+      return this._idbReady || this._checkLS();
+    }
+  };
+
+  /* ==============================
+     简易加密层（XOR + Base64）
+     用于员工姓名、电话等敏感字段的轻量加密
+     注：非军事级加密，但可防止直接查看 localStorage 明文
+     ============================== */
+  const CryptoUtil = {
+    _key: 'tw2024_secure_key_salt',
+    // XOR 加密
+    encrypt(text) {
+      if (!text || typeof text !== 'string') return text;
+      try {
+        const key = this._key;
+        let result = '';
+        for (let i = 0; i < text.length; i++) {
+          result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        }
+        return 'ENC:' + btoa(unescape(encodeURIComponent(result)));
+      } catch(e) { return text; }
+    },
+    // XOR 解密
+    decrypt(text) {
+      if (!text || typeof text !== 'string' || !text.startsWith('ENC:')) return text;
+      try {
+        const key = this._key;
+        const raw = decodeURIComponent(escape(atob(text.slice(4))));
+        let result = '';
+        for (let i = 0; i < raw.length; i++) {
+          result += String.fromCharCode(raw.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+        }
+        return result;
+      } catch(e) { return text; }
+    },
+    // 加密员工档案中的敏感字段
+    encryptStaffProfiles(profiles) {
+      if (!profiles) return profiles;
+      return profiles.map(p => ({
+        ...p,
+        phone: p.phone ? this.encrypt(p.phone) : p.phone,
+        notes: (p.notes || []).map(n => ({ ...n, text: n.text ? this.encrypt(n.text) : n.text })),
+      }));
+    },
+    // 解密员工档案
+    decryptStaffProfiles(profiles) {
+      if (!profiles) return profiles;
+      return profiles.map(p => ({
+        ...p,
+        phone: p.phone ? this.decrypt(p.phone) : p.phone,
+        notes: (p.notes || []).map(n => ({ ...n, text: n.text ? this.decrypt(n.text) : n.text })),
+      }));
+    },
+  };
 
   function defaultData() {
     return {
@@ -1250,120 +1468,102 @@
     return d;
   }
 
-  function loadData() {
+  // 同步加载数据（从 localStorage/内存，IndexedDB 数据在异步初始化后合并）
+  function loadDataSync() {
     try {
-      // 1. 先尝试当前版本的 key
-      const raw = storageGet(STORE_KEY);
+      // 1. 先尝试当前版本 key（同步：内存 → localStorage）
+      const raw = StorageEngine.getSync(STORE_KEY);
       if (raw) {
         const d = JSON.parse(raw);
         return ensureCompleteData(d);
       }
-      // 1.5 尝试从备份 key 恢复
-      const backupRaw = storageGet(STORE_KEY + '_backup');
+      // 2. 尝试备份
+      const backupRaw = StorageEngine.getSync(STORE_KEY + '_backup');
       if (backupRaw) {
         try {
           const d = JSON.parse(backupRaw);
-          if (d && d.records) {
-            console.log('从备份恢复数据');
-            return ensureCompleteData(d);
-          }
+          if (d && d.records) return ensureCompleteData(d);
         } catch(e) {}
       }
-      // 2. 尝试从所有旧版本 key 加载并迁移
+      // 3. 尝试旧版本迁移
       for (const oldKey of OLD_STORE_KEYS) {
-        const oldRaw = storageGet(oldKey);
+        const oldRaw = StorageEngine.getSync(oldKey);
         if (oldRaw) {
           try {
             const oldData = JSON.parse(oldRaw);
             if (oldData && oldData.records) {
               const migrated = migrateData(oldData);
               const completed = ensureCompleteData(migrated);
-              // 立即保存到新 key，下次就不用再迁移
-              storageSet(STORE_KEY, JSON.stringify(completed));
+              StorageEngine.setSync(STORE_KEY, JSON.stringify(completed));
+              StorageEngine.removeSync(oldKey);
               console.log('已从旧版本(' + oldKey + ')迁移数据');
-              // 迁移成功后删除旧 key，释放空间
-              storageRemove(oldKey);
               return completed;
             }
           } catch (e) { console.warn('迁移失败(' + oldKey + '):', e); }
-          // 即使迁移失败也删旧 key（可能是损坏数据）
-          storageRemove(oldKey);
+          StorageEngine.removeSync(oldKey);
         }
       }
-    } catch (e) { console.warn('loadData error:', e); }
+    } catch (e) { console.warn('loadDataSync error:', e); }
     return defaultData();
   }
 
-  let data = loadData();
-
-  /* ==============================
-     存储层：localStorage + 内存 fallback
-     QQ浏览器等可能限制 localStorage，需要容错
-     ============================== */
-  let _memStore = {}; // 内存存储 fallback
-  let _lsUsable = null; // null=未检测, true/false
-
-  function detectLS() {
-    if (_lsUsable !== null) return _lsUsable;
+  // 异步从 IndexedDB 加载数据（如果比同步数据更新，则覆盖）
+  async function loadDataAsync() {
     try {
-      const k = '__t_' + Date.now();
-      localStorage.setItem(k, 'x');
-      localStorage.removeItem(k);
-      _lsUsable = true;
-    } catch(e) {
-      _lsUsable = false;
-      console.warn('localStorage 不可用，改用内存存储:', e.name, e.message);
-    }
-    return _lsUsable;
+      await StorageEngine.initIDB();
+      const raw = await StorageEngine.get(STORE_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        const completed = ensureCompleteData(d);
+        // 解密敏感字段
+        if (completed.staffProfiles) {
+          completed.staffProfiles = CryptoUtil.decryptStaffProfiles(completed.staffProfiles);
+        }
+        // 用 IndexedDB 的数据覆盖（它通常是最新的）
+        data = completed;
+        // 同步到 localStorage（方便下次同步加载更快）
+        StorageEngine.setSync(STORE_KEY, JSON.stringify(completed));
+        console.log('✅ 已从 IndexedDB 加载数据');
+        return true;
+      }
+      // IndexedDB 没有数据，但内存里有同步加载的数据，保存到 IndexedDB
+      if (data && data.records) {
+        await StorageEngine.set(STORE_KEY, JSON.stringify(data));
+        console.log('✅ 已将现有数据同步到 IndexedDB');
+      }
+    } catch (e) { console.warn('loadDataAsync error:', e); }
+    return false;
   }
 
-  function storageGet(key) {
-    if (detectLS()) {
-      try { return localStorage.getItem(key); } catch(e) { return null; }
+  let data = loadDataSync();
+
+  // 异步初始化 IndexedDB（不阻塞页面渲染）
+  let _idbInitialized = false;
+  (async () => {
+    await loadDataAsync();
+    _idbInitialized = true;
+    // 如果当前在分析报告页，刷新存储状态显示
+    if (typeof renderAnalysis === 'function' && $('page-analysis') && $('page-analysis').style.display !== 'none') {
+      renderAnalysis();
     }
-    return _memStore[key] || null;
-  }
+  })();
 
-  function storageSet(key, val) {
-    if (detectLS()) {
-      try { localStorage.setItem(key, val); return true; }
-      catch(e) { console.warn('localStorage 写入失败，改用内存:', e.name); }
-    }
-    _memStore[key] = val;
-    return false; // 返回 false 表示用了内存存储（非持久化）
-  }
-
-  function storageRemove(key) {
-    if (detectLS()) {
-      try { localStorage.removeItem(key); } catch(e) {}
-    }
-    delete _memStore[key];
-  }
-
-  // 标记当前是否在用内存模式（非持久化）
-  let _usingMemory = false;
-
+  // 保存数据（同步写 + 异步写 IndexedDB）
   function saveData() {
     const json = JSON.stringify(data);
-    const sizeKB = (json.length / 1024).toFixed(1);
-
-    // 用存储层写入（自动 fallback 到内存）
-    const ok = storageSet(STORE_KEY, json);
-
-    if (!ok) {
-      // localStorage 写不进去，已在内存中保存
-      _usingMemory = true;
-      // 静默处理，不每次都弹窗打扰用户
-      // 只在控制台记录
-      console.warn('数据已保存在内存中（非持久化），请导出备份');
-      return;
-    }
-
-    // localStorage 写入成功，尝试备份
-    try {
-      localStorage.setItem(STORE_KEY + '_backup', json);
-    } catch(e) {
-      // 备份失败就算了
+    // 1. 同步写入（localStorage + 内存）
+    StorageEngine.setSync(STORE_KEY, json);
+    // 2. 异步写入 IndexedDB（不阻塞 UI）
+    if (StorageEngine._idbReady || !StorageEngine._idbFailed) {
+      (async () => {
+        await StorageEngine.initIDB();
+        // 加密敏感字段后存储
+        const dataCopy = JSON.parse(json);
+        if (dataCopy.staffProfiles) {
+          dataCopy.staffProfiles = CryptoUtil.encryptStaffProfiles(dataCopy.staffProfiles);
+        }
+        await StorageEngine.set(STORE_KEY, JSON.stringify(dataCopy));
+      })();
     }
   }
 
@@ -2137,9 +2337,16 @@
   function clearAllData() {
     if (!confirm('⚠️ 确认清空所有数据？\n\n此操作不可撤销！\n建议先点击「导出备份」保存数据。')) return;
     if (!confirm('再次确认：真的要清空全部数据吗？')) return;
-    storageRemove(STORE_KEY);
-    storageRemove(STORE_KEY + '_backup');
-    location.reload();
+    // 同步清除
+    StorageEngine.removeSync(STORE_KEY);
+    StorageEngine.removeSync(STORE_KEY + '_backup');
+    // 异步清除 IndexedDB
+    (async () => {
+      await StorageEngine.initIDB();
+      await StorageEngine.remove(STORE_KEY);
+      await StorageEngine.remove(STORE_KEY + '_backup');
+      location.reload();
+    })();
   }
 
   function mergeCategories(e, i) {
@@ -3474,32 +3681,24 @@
   }
 
   function renderStorageStatus() {
-    const lsOk = detectLS();
+    const mode = StorageEngine.getMode();
+    const persistent = StorageEngine.isPersistent();
     let dataSize = 0;
     try { dataSize = JSON.stringify(data).length; } catch(_) {}
     const sizeKB = (dataSize / 1024).toFixed(1);
 
-    if (lsOk) {
-      // localStorage 可用，检查实际剩余空间
-      let remaining = '未知';
-      try {
-        // 测试能写多大
-        let testStr = '';
-        let max = 0;
-        for (let i = 0; i < 5120; i++) testStr += 'x'; // 每次 5KB
-        for (let i = 0; i < 100; i++) {
-          try { localStorage.setItem('__size_test', testStr.repeat(i + 1)); max = (i + 1) * 5; }
-          catch(e) { break; }
-        }
-        localStorage.removeItem('__size_test');
-        remaining = max + ' KB';
-      } catch(_) {}
-
+    if (persistent) {
+      const modeLabel = mode === 'IndexedDB' ? 'IndexedDB（推荐，大容量持久存储）' : 'localStorage（持久存储）';
+      const idbNote = mode === 'IndexedDB'
+        ? '<br/>🔐 敏感信息（电话、备注）已加密存储'
+        : (mode === 'localStorage' && StorageEngine._idbFailed
+          ? '<br/>⚠️ IndexedDB 不可用，正在使用 localStorage（加密已启用）'
+          : '<br/>⏳ 正在初始化 IndexedDB...');
       return `
         <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:12px; margin-bottom:10px; font-size:12px; color:#166534;">
-          ✅ 存储状态正常（localStorage 可用）<br/>
-          📊 当前数据大小: ${sizeKB} KB · 可用空间约: ${remaining}<br/>
-          <span style="color:#16a34a;">数据会自动保存，建议定期导出备份以防丢失</span>
+          ✅ 存储状态正常（${modeLabel}）<br/>
+          📊 当前数据大小: ${sizeKB} KB${idbNote}<br/>
+          <span style="color:#16a34a;">数据会自动持久保存，关闭页面不丢失。建议定期导出备份。</span>
         </div>
       `;
     } else {
@@ -3507,9 +3706,9 @@
         <div style="background:#fef2f2; border:1px solid #fecaca; border-radius:10px; padding:12px; margin-bottom:10px; font-size:12px; color:#991b1b;">
           ❌ 浏览器不允许本地存储！数据只保存在内存中，关闭页面后丢失！<br/>
           📊 当前数据大小: ${sizeKB} KB<br/><br/>
-          <strong>解决方法（QQ浏览器）：</strong><br/>
-          1. 检查 QQ浏览器设置 → 隐私设置 → 是否开启了「无痕浏览」<br/>
-          2. QQ浏览器设置 → 清除浏览数据 → 清除缓存（不要清除 Cookie 和网站数据）<br/>
+          <strong>解决方法：</strong><br/>
+          1. 检查浏览器设置 → 隐私设置 → 是否开启了「无痕/隐私浏览」<br/>
+          2. 浏览器设置 → 确保未开启「阻止所有 Cookie」<br/>
           3. 尝试用系统自带的 Safari 或 Chrome 打开本页面<br/>
           4. 如果是从微信/QQ内打开的链接，请在浏览器中单独打开<br/><br/>
           <strong style="color:#dc2626;">⚠️ 当前模式下请务必先导出备份再操作！</strong>
@@ -3650,10 +3849,10 @@
     // 每周激励语
     updateDailyQuote();
     // 检测存储状态
-    if (!detectLS()) {
-      // localStorage 不可用，延迟提示（等页面渲染完）
+    if (!StorageEngine.isPersistent()) {
+      // 没有任何持久存储可用，延迟提示
       setTimeout(() => {
-        alert('⚠️ 当前浏览器不允许使用本地存储！\n\n你的数据不会自动保存，关闭页面后丢失。\n\n请每次操作后点击「导出备份」保存数据。\n\n建议用 Safari 或 Chrome 打开本页面。');
+        alert('⚠️ 当前浏览器不允许本地存储！\n\n你的数据不会自动保存，关闭页面后丢失。\n\n请每次操作后点击「导出备份」保存数据。\n\n建议用 Safari 或 Chrome 打开本页面。');
       }, 500);
     }
     // 默认选中分析报告页
